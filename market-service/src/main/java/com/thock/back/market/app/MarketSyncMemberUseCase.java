@@ -18,17 +18,17 @@ public class MarketSyncMemberUseCase {
     @Transactional
     public MarketMember syncMember(MemberDto member) {
         // 기존 회원인지 판단
-        boolean isNew = !marketMemberRepository.existsById(member.getId());
+        boolean isNew = !marketMemberRepository.existsById(member.id());
 
         MarketMember _member = marketMemberRepository.save(
                 new MarketMember(
-                        member.getEmail(),
-                        member.getName(),
-                        member.getRole(),
-                        member.getState(),
-                        member.getId(),
-                        member.getCreatedAt(),
-                        member.getUpdatedAt()
+                        member.email(),
+                        member.name(),
+                        member.role(),
+                        member.state(),
+                        member.id(),
+                        member.createdAt(),
+                        member.updatedAt()
                 )
         );
 

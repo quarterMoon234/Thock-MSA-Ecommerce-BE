@@ -33,15 +33,15 @@ public class MemberSignUpService {
 
         // Member 생성
         Member member = Member.signUp(command.email(), command.name());
-        memberRepository.save(member);
+        Member savedMember = memberRepository.save(member);
 
         // 비밀번호 해싱 후 Credential 생성
         String hashedPassword = passwordEncoder.encode(command.password());
-        Credential credential = Credential.create(member.getId(), hashedPassword);
+        Credential credential = Credential.create(savedMember.getId(), hashedPassword);
         credentialRepository.save(credential);
 
 
-        eventPublisher.publish(new MemberJoinedEvent(member.toDto()));
+        eventPublisher.publish(new MemberJoinedEvent(savedMember.toDto()));
 
         return member.getId();
     }

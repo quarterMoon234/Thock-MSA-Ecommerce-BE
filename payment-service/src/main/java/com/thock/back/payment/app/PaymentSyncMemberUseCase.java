@@ -22,17 +22,17 @@ public class PaymentSyncMemberUseCase {
      **/
 
     public PaymentMember syncMember(MemberDto member){
-        boolean isNew = !paymentMemberRepository.existsById(member.getId());
+        boolean isNew = !paymentMemberRepository.existsById(member.id());
 
         PaymentMember paymentMember = paymentMemberRepository.save(
                 new PaymentMember(
-                        member.getEmail(),
-                        member.getName(),
-                        member.getState(),
-                        member.getRole(),
-                        member.getId(),
-                        member.getCreatedAt(),
-                        member.getUpdatedAt()
+                        member.email(),
+                        member.name(),
+                        member.state(),
+                        member.role(),
+                        member.id(),
+                        member.createdAt(),
+                        member.updatedAt()
                 )
         );
 

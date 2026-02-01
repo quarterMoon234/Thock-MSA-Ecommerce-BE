@@ -17,7 +17,7 @@ public class MarketCreateCartUseCase {
 
     @Transactional
     public Cart createCart(MarketMemberDto buyer) {
-        MarketMember _buyer = marketMemberRepository.getReferenceById(buyer.getId());
+        MarketMember _buyer = marketMemberRepository.getReferenceById(buyer.id());
 
         Cart cart = new Cart(_buyer);
 

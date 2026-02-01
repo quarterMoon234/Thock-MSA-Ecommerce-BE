@@ -26,13 +26,13 @@ public class PaymentEventListener {
     @TransactionalEventListener(phase = AFTER_COMMIT)
     @Transactional(propagation = REQUIRES_NEW)
     public void handle(MemberJoinedEvent event) {
-        paymentFacade.syncMember(event.getMember());
+        paymentFacade.syncMember(event.member());
     }
 
     @TransactionalEventListener(phase = AFTER_COMMIT)
     @Transactional(propagation = REQUIRES_NEW)
     public void handle(MemberModifiedEvent event) {
-        paymentFacade.syncMember(event.getMember());
+        paymentFacade.syncMember(event.member());
     }
 
 

@@ -1,6 +1,8 @@
 spring:
   application:
     name: member-service
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
   jpa:
     hibernate:
       ddl-auto: update

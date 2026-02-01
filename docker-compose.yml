@@ -1,14 +1,46 @@
 services:
+  # ==================== Kafka ====================
+  redpanda:
+    image: redpandadata/redpanda:v24.1.1
+    container_name: redpanda
+    command:
+      - redpanda start
+      - --smp=1
+      - --memory=256M
+      - --reserve-memory=0M
+      - --overprovisioned
+      - --node-id=0
+      - --check=false
+      - --kafka-addr=PLAINTEXT://0.0.0.0:29092,OUTSIDE://0.0.0.0:9092
+      - --advertise-kafka-addr=PLAINTEXT://redpanda:29092,OUTSIDE://localhost:9092
+    ports:
+      - "9092:9092"
+      - "29092:29092"
+    networks:
+      - thock-network
+
+  redpanda-console:
+    image: redpandadata/console:v2.5.2
+    container_name: redpanda-console
+    depends_on:
+      - redpanda
+    ports:
+      - "8090:8080"
+    environment:
+      KAFKA_BROKERS: redpanda:29092
+    networks:
+      - thock-network
+
   # ==================== MySQL Databases ====================
-  member-db:
+  member_db:
     image: mysql:8.0
-    container_name: member-db
+    container_name: member_db
     environment:
       MYSQL_DATABASE: ${MEMBER_DB_NAME:-member_db}
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
       TZ: Asia/Seoul
     ports:
-      - "3306:3306"
+      - "3307:3306"
     volumes:
       - member-db-data:/var/lib/mysql
     healthcheck:
@@ -19,15 +51,15 @@ services:
     networks:
       - thock-network
 
-  product-db:
+  product_db:
     image: mysql:8.0
-    container_name: product-db
+    container_name: product_db
     environment:
       MYSQL_DATABASE: ${PRODUCT_DB_NAME:-product_db}
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
       TZ: Asia/Seoul
     ports:
-      - "3307:3306"
+      - "3308:3306"
     volumes:
       - product-db-data:/var/lib/mysql
     healthcheck:
@@ -38,15 +70,15 @@ services:
     networks:
       - thock-network
 
-  market-db:
+  market_db:
     image: mysql:8.0
-    container_name: market-db
+    container_name: market_db
     environment:
       MYSQL_DATABASE: ${MARKET_DB_NAME:-market_db}
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
       TZ: Asia/Seoul
     ports:
-      - "3308:3306"
+      - "3309:3306"
     volumes:
       - market-db-data:/var/lib/mysql
     healthcheck:
@@ -57,15 +89,15 @@ services:
     networks:
       - thock-network
 
-  payment-db:
+  payment_db:
     image: mysql:8.0
-    container_name: payment-db
+    container_name: payment_db
     environment:
       MYSQL_DATABASE: ${PAYMENT_DB_NAME:-payment_db}
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
       TZ: Asia/Seoul
     ports:
-      - "3309:3306"
+      - "3310:3306"
     volumes:
       - payment-db-data:/var/lib/mysql
     healthcheck:
@@ -76,15 +108,15 @@ services:
     networks:
       - thock-network
 
-  settlement-db:
+  settlement_db:
     image: mysql:8.0
-    container_name: settlement-db
+    container_name: settlement_db
     environment:
       MYSQL_DATABASE: ${SETTLEMENT_DB_NAME:-settlement_db}
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
       TZ: Asia/Seoul
     ports:
-      - "3310:3306"
+      - "3311:3306"
     volumes:
       - settlement-db-data:/var/lib/mysql
     healthcheck:
@@ -106,14 +138,17 @@ services:
     env_file:
       - .env
     environment:
-      MYSQL_HOST: member-db
+      MYSQL_HOST: member_db
       MYSQL_PORT: 3306
       MYSQL_DATABASE: ${MEMBER_DB_NAME:-member_db}
       MYSQL_USER: ${MYSQL_USER:-root}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD:-root}
+      KAFKA_BOOTSTRAP_SERVERS: redpanda:29092
     depends_on:
-      member-db:
+      member_db:
         condition: service_healthy
+      redpanda:
+        condition: service_started
     networks:
       - thock-network
 
@@ -127,14 +162,17 @@ services:
     env_file:
       - .env
     environment:
-      MYSQL_HOST: product-db
+      MYSQL_HOST: product_db
       MYSQL_PORT: 3306
       MYSQL_DATABASE: ${PRODUCT_DB_NAME:-product_db}
       MYSQL_USER: ${MYSQL_USER:-root}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD:-root}
+      KAFKA_BOOTSTRAP_SERVERS: redpanda:29092
     depends_on:
-      product-db:
+      product_db:
         condition: service_healthy
+      redpanda:
+        condition: service_started
     networks:
       - thock-network
 
@@ -148,19 +186,22 @@ services:
     env_file:
       - .env
     environment:
-      MYSQL_HOST: market-db
+      MYSQL_HOST: market_db
       MYSQL_PORT: 3306
       MYSQL_DATABASE: ${MARKET_DB_NAME:-market_db}
       MYSQL_USER: ${MYSQL_USER:-root}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD:-root}
       PRODUCT_SERVICE_URL: ${PRODUCT_SERVICE_URL:-http://product-service:8081}
       PAYMENT_SERVICE_URL: ${PAYMENT_SERVICE_URL:-http://payment-service:8083}
+      KAFKA_BOOTSTRAP_SERVERS: redpanda:29092
     depends_on:
-      market-db:
+      market_db:
         condition: service_healthy
       product-service:
         condition: service_started
       payment-service:
+        condition: service_started
+      redpanda:
         condition: service_started
     networks:
       - thock-network
@@ -175,14 +216,17 @@ services:
     env_file:
       - .env
     environment:
-      MYSQL_HOST: payment-db
+      MYSQL_HOST: payment_db
       MYSQL_PORT: 3306
       MYSQL_DATABASE: ${PAYMENT_DB_NAME:-payment_db}
       MYSQL_USER: ${MYSQL_USER:-root}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD:-root}
+      KAFKA_BOOTSTRAP_SERVERS: redpanda:29092
     depends_on:
-      payment-db:
+      payment_db:
         condition: service_healthy
+      redpanda:
+        condition: service_started
     networks:
       - thock-network
 
@@ -196,14 +240,17 @@ services:
     env_file:
       - .env
     environment:
-      MYSQL_HOST: settlement-db
+      MYSQL_HOST: settlement_db
       MYSQL_PORT: 3306
       MYSQL_DATABASE: ${SETTLEMENT_DB_NAME:-settlement_db}
       MYSQL_USER: ${MYSQL_USER:-root}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD:-root}
+      KAFKA_BOOTSTRAP_SERVERS: redpanda:29092
     depends_on:
-      settlement-db:
+      settlement_db:
         condition: service_healthy
+      redpanda:
+        condition: service_started
     networks:
       - thock-network
 
@@ -217,3 +264,5 @@ volumes:
   market-db-data:
   payment-db-data:
   settlement-db-data:
+
+

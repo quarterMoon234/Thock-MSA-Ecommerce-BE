@@ -2,12 +2,14 @@ package com.thock.back.market;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
 @SpringBootApplication(scanBasePackages = {
         "com.thock.back.market",
         "com.thock.back.global"
 })
+@EnableJpaAuditing
 public class MarketServiceApplication {
 
     public static void main(String[] args) {
