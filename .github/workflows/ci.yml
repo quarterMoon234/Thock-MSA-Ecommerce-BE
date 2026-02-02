@@ -8,8 +8,25 @@ jobs:
   build-test:
     runs-on: ubuntu-latest
 
+    services:
+      mysql:
+        image: mysql:8.0
+        ports:
+          - 3306:3306
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: test_db
+          MYSQL_USER: test
+          MYSQL_PASSWORD: test
+          TZ: Asia/Seoul
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
     env:
-      JWT_SECRET_KEY : ${{ secrets.JWT_SECRET_KEY }}
+      JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
 
     steps:
       - name: Checkout code
@@ -26,21 +43,23 @@ jobs:
         run: chmod +x ./gradlew
 
       - name: Run test
-        run: ./gradlew test
+        run: ./gradlew test -Dspring.profiles.active=test
 
       - name: Build project
         run: ./gradlew build -x test
 
-      - name: Build Docker Image (amd64)
-        run: docker build --platform linux/amd64 -t team08-app:ci .
-
-      - name: Login to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-
-      - name: Build and Push Docker Image (amd64)
-        run: |
-          docker build --platform linux/amd64 -t sang234/team08-app:latest .
-          docker push sang234/team08-app:latest
+#       TODO CI에서는 빌드 & 테스트만 진행, push 코드는 CD 스크립트로 이관, sang234, team08-app 변수로 빼두기
+#       build 두 번 되고 있음.
+#      - name: Build Docker Image (amd64)
+#        run: docker build --platform linux/amd64 -t team08-app:ci .
+#
+#      - name: Login to Docker Hub
+#        uses: docker/login-action@v3
+#        with:
+#          username: ${{ secrets.DOCKERHUB_USERNAME }}
+#          password: ${{ secrets.DOCKERHUB_TOKEN }}
+#
+#      - name: Build and Push Docker Image (amd64)
+#        run: |
+#          docker build --platform linux/amd64 -t sang234/team08-app:latest .
+#          docker push sang234/team08-app:latest
