@@ -31,99 +31,23 @@ services:
     networks:
       - thock-network
 
-  # ==================== MySQL Databases ====================
-  member_db:
+  # ==================== MySQL Database (Single Container) ====================
+  mysql:
     image: mysql:8.0
-    container_name: member_db
+    container_name: thock-mysql
     environment:
-      MYSQL_DATABASE: ${MEMBER_DB_NAME:-member_db}
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
       TZ: Asia/Seoul
     ports:
       - "3307:3306"
     volumes:
-      - member-db-data:/var/lib/mysql
+      - mysql-data:/var/lib/mysql
+      - ./docker/init-databases.sql:/docker-entrypoint-initdb.d/init-databases.sql
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 10s
       timeout: 5s
-      retries: 5
-    networks:
-      - thock-network
-
-  product_db:
-    image: mysql:8.0
-    container_name: product_db
-    environment:
-      MYSQL_DATABASE: ${PRODUCT_DB_NAME:-product_db}
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
-      TZ: Asia/Seoul
-    ports:
-      - "3308:3306"
-    volumes:
-      - product-db-data:/var/lib/mysql
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - thock-network
-
-  market_db:
-    image: mysql:8.0
-    container_name: market_db
-    environment:
-      MYSQL_DATABASE: ${MARKET_DB_NAME:-market_db}
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
-      TZ: Asia/Seoul
-    ports:
-      - "3309:3306"
-    volumes:
-      - market-db-data:/var/lib/mysql
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - thock-network
-
-  payment_db:
-    image: mysql:8.0
-    container_name: payment_db
-    environment:
-      MYSQL_DATABASE: ${PAYMENT_DB_NAME:-payment_db}
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
-      TZ: Asia/Seoul
-    ports:
-      - "3310:3306"
-    volumes:
-      - payment-db-data:/var/lib/mysql
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - thock-network
-
-  settlement_db:
-    image: mysql:8.0
-    container_name: settlement_db
-    environment:
-      MYSQL_DATABASE: ${SETTLEMENT_DB_NAME:-settlement_db}
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
-      TZ: Asia/Seoul
-    ports:
-      - "3311:3306"
-    volumes:
-      - settlement-db-data:/var/lib/mysql
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      retries: 10
     networks:
       - thock-network
 
@@ -138,14 +62,16 @@ services:
     env_file:
       - .env
     environment:
-      MYSQL_HOST: member_db
+      TZ: Asia/Seoul
+      JAVA_OPTS: -Duser.timezone=Asia/Seoul
+      MYSQL_HOST: mysql
       MYSQL_PORT: 3306
-      MYSQL_DATABASE: ${MEMBER_DB_NAME:-member_db}
-      MYSQL_USER: ${MYSQL_USER:-root}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-root}
+      MYSQL_DATABASE: member_db
+      MYSQL_USER: member_user
+      MYSQL_PASSWORD: member_pass
       KAFKA_BOOTSTRAP_SERVERS: redpanda:29092
     depends_on:
-      member_db:
+      mysql:
         condition: service_healthy
       redpanda:
         condition: service_started
@@ -162,14 +88,16 @@ services:
     env_file:
       - .env
     environment:
-      MYSQL_HOST: product_db
+      TZ: Asia/Seoul
+      JAVA_OPTS: -Duser.timezone=Asia/Seoul
+      MYSQL_HOST: mysql
       MYSQL_PORT: 3306
-      MYSQL_DATABASE: ${PRODUCT_DB_NAME:-product_db}
-      MYSQL_USER: ${MYSQL_USER:-root}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-root}
+      MYSQL_DATABASE: product_db
+      MYSQL_USER: product_user
+      MYSQL_PASSWORD: product_pass
       KAFKA_BOOTSTRAP_SERVERS: redpanda:29092
     depends_on:
-      product_db:
+      mysql:
         condition: service_healthy
       redpanda:
         condition: service_started
@@ -186,16 +114,18 @@ services:
     env_file:
       - .env
     environment:
-      MYSQL_HOST: market_db
+      TZ: Asia/Seoul
+      JAVA_OPTS: -Duser.timezone=Asia/Seoul
+      MYSQL_HOST: mysql
       MYSQL_PORT: 3306
-      MYSQL_DATABASE: ${MARKET_DB_NAME:-market_db}
-      MYSQL_USER: ${MYSQL_USER:-root}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-root}
+      MYSQL_DATABASE: market_db
+      MYSQL_USER: market_user
+      MYSQL_PASSWORD: market_pass
       PRODUCT_SERVICE_URL: ${PRODUCT_SERVICE_URL:-http://product-service:8081}
       PAYMENT_SERVICE_URL: ${PAYMENT_SERVICE_URL:-http://payment-service:8083}
       KAFKA_BOOTSTRAP_SERVERS: redpanda:29092
     depends_on:
-      market_db:
+      mysql:
         condition: service_healthy
       product-service:
         condition: service_started
@@ -216,14 +146,16 @@ services:
     env_file:
       - .env
     environment:
-      MYSQL_HOST: payment_db
+      TZ: Asia/Seoul
+      JAVA_OPTS: -Duser.timezone=Asia/Seoul
+      MYSQL_HOST: mysql
       MYSQL_PORT: 3306
-      MYSQL_DATABASE: ${PAYMENT_DB_NAME:-payment_db}
-      MYSQL_USER: ${MYSQL_USER:-root}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-root}
+      MYSQL_DATABASE: payment_db
+      MYSQL_USER: payment_user
+      MYSQL_PASSWORD: payment_pass
       KAFKA_BOOTSTRAP_SERVERS: redpanda:29092
     depends_on:
-      payment_db:
+      mysql:
         condition: service_healthy
       redpanda:
         condition: service_started
@@ -240,14 +172,16 @@ services:
     env_file:
       - .env
     environment:
-      MYSQL_HOST: settlement_db
+      TZ: Asia/Seoul
+      JAVA_OPTS: -Duser.timezone=Asia/Seoul
+      MYSQL_HOST: mysql
       MYSQL_PORT: 3306
-      MYSQL_DATABASE: ${SETTLEMENT_DB_NAME:-settlement_db}
-      MYSQL_USER: ${MYSQL_USER:-root}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-root}
+      MYSQL_DATABASE: settlement_db
+      MYSQL_USER: settlement_user
+      MYSQL_PASSWORD: settlement_pass
       KAFKA_BOOTSTRAP_SERVERS: redpanda:29092
     depends_on:
-      settlement_db:
+      mysql:
         condition: service_healthy
       redpanda:
         condition: service_started
@@ -259,10 +193,4 @@ networks:
     driver: bridge
 
 volumes:
-  member-db-data:
-  product-db-data:
-  market-db-data:
-  payment-db-data:
-  settlement-db-data:
-
-
+  mysql-data:
