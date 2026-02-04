@@ -70,6 +70,9 @@ services:
       MYSQL_USER: member_user
       MYSQL_PASSWORD: member_pass
       KAFKA_BOOTSTRAP_SERVERS: redpanda:29092
+      LOG_PATH: /app/logs
+    volumes:
+      - ./logs/member:/app/logs
     depends_on:
       mysql:
         condition: service_healthy
@@ -96,6 +99,9 @@ services:
       MYSQL_USER: product_user
       MYSQL_PASSWORD: product_pass
       KAFKA_BOOTSTRAP_SERVERS: redpanda:29092
+      LOG_PATH: /app/logs
+    volumes:
+      - ./logs/product:/app/logs
     depends_on:
       mysql:
         condition: service_healthy
@@ -124,6 +130,9 @@ services:
       PRODUCT_SERVICE_URL: ${PRODUCT_SERVICE_URL:-http://product-service:8081}
       PAYMENT_SERVICE_URL: ${PAYMENT_SERVICE_URL:-http://payment-service:8083}
       KAFKA_BOOTSTRAP_SERVERS: redpanda:29092
+      LOG_PATH: /app/logs
+    volumes:
+      - ./logs/market:/app/logs
     depends_on:
       mysql:
         condition: service_healthy
@@ -154,6 +163,9 @@ services:
       MYSQL_USER: payment_user
       MYSQL_PASSWORD: payment_pass
       KAFKA_BOOTSTRAP_SERVERS: redpanda:29092
+      LOG_PATH: /app/logs
+    volumes:
+      - ./logs/payment:/app/logs
     depends_on:
       mysql:
         condition: service_healthy
@@ -180,6 +192,9 @@ services:
       MYSQL_USER: settlement_user
       MYSQL_PASSWORD: settlement_pass
       KAFKA_BOOTSTRAP_SERVERS: redpanda:29092
+      LOG_PATH: /app/logs
+    volumes:
+      - ./logs/settlement:/app/logs
     depends_on:
       mysql:
         condition: service_healthy

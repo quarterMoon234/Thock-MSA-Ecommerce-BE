@@ -13,10 +13,13 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
+@Slf4j
 @RequestMapping("/api/v1/payments")
 @RequiredArgsConstructor
 @Tag(name = "payment-controller", description = "결제, 지갑 관련 API(지갑 조회, 로그 조회, 결제 내역 조회 등등)")
@@ -36,6 +39,7 @@ public class ApiV1PaymentController {
     @GetMapping("internal/wallets/{memberId}")
     public ResponseEntity<WalletDto> getInternalWallet(@PathVariable("memberId") Long memberId) {
         // 내부 호출용 API
+        log.info("Payment API : getInternalWallet / memberId = {}", memberId);
         return ResponseEntity.ok().body(paymentFacade.walletFindByMemberId(memberId));
     }
 
@@ -51,6 +55,7 @@ public class ApiV1PaymentController {
     @GetMapping("/balanceLog")
     public ResponseEntity<WalletLogResponseDto> getWalletLog() throws Exception {
         Long memberId = AuthContext.memberId();
+        log.info("Payment API : getWalletLog / memberId = {}", memberId);
         return ResponseEntity.ok().body(paymentFacade.getWalletLog(memberId));
     }
 
@@ -66,6 +71,7 @@ public class ApiV1PaymentController {
     @GetMapping("/paymentLog")
     public ResponseEntity<PaymentLogResponseDto> getPaymentLog() throws Exception {
         Long memberId = AuthContext.memberId();
+        log.info("Payment API : getPaymentLog / memberId = {}", memberId);
         return ResponseEntity.ok().body(paymentFacade.getPaymentLog(memberId));
     }
 
@@ -81,6 +87,7 @@ public class ApiV1PaymentController {
     @GetMapping("/revenueLog")
     public ResponseEntity<RevenueLogResponseDto> getRevenueLog() throws Exception {
         Long memberId = AuthContext.memberId();
+        log.info("Payment API : getRevenueLog / memberId = {}", memberId);
         return ResponseEntity.ok().body(paymentFacade.getRevenueLog(memberId));
     }
 
@@ -96,6 +103,7 @@ public class ApiV1PaymentController {
 
     @PostMapping("/confirm/toss")
     public ResponseEntity<?> confirmToss(@RequestBody PaymentConfirmRequestDto request) {
+        log.info("Payment API : confirmToss / orderId = {}", request.getOrderId());
         return ResponseEntity.ok(paymentConfirmService.confirmPayment(request));
     }
 
