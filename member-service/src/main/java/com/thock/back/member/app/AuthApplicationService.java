@@ -3,8 +3,7 @@ package com.thock.back.member.app;
 
 import com.thock.back.global.exception.CustomException;
 import com.thock.back.global.exception.ErrorCode;
-import com.thock.back.global.security.JwtTokenProvider;
-import com.thock.back.global.security.RefreshTokenHasher;
+import com.thock.back.member.security.JwtTokenProvider;
 import com.thock.back.member.domain.command.LoginCommand;
 import com.thock.back.member.domain.entity.Credential;
 import com.thock.back.member.domain.entity.LoginHistory;
@@ -15,11 +14,12 @@ import com.thock.back.member.out.CredentialRepository;
 import com.thock.back.member.out.LoginHistoryRepository;
 import com.thock.back.member.out.MemberRepository;
 import com.thock.back.member.out.RefreshTokenRepository;
-import jakarta.transaction.Transactional;
+import com.thock.back.member.security.RefreshTokenHasher;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 
@@ -38,7 +38,7 @@ public class AuthApplicationService {
     private final RefreshTokenHasher refreshTokenHasher;
 
     @Transactional
-    public AuthenticationResult login(LoginCommand command) throws Exception {
+    public AuthenticationResult login(LoginCommand command) {
         // Member 조회
         Member member = memberRepository.findByEmail(command.email())
                 .orElseThrow(() -> new CustomException(ErrorCode.INVALID_CREDENTIALS));
@@ -92,7 +92,7 @@ public class AuthApplicationService {
     }
 
     @Transactional
-    public AuthenticationResult refreshAccessToken(String refreshTokenValue) throws Exception {
+    public AuthenticationResult refreshAccessToken(String refreshTokenValue) {
 
         // 평문을 SHA-256 해시로 변환
         String tokenHash = refreshTokenHasher.hash(refreshTokenValue);
