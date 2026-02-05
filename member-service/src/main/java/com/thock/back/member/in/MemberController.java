@@ -1,6 +1,8 @@
 package com.thock.back.member.in;
 
 
+import com.thock.back.global.exception.CustomException;
+import com.thock.back.global.exception.ErrorCode;
 import com.thock.back.global.exception.ErrorResponse;
 import com.thock.back.global.security.AuthContext;
 import com.thock.back.member.app.MemberSignUpService;
@@ -9,7 +11,7 @@ import com.thock.back.member.domain.command.SignUpCommand;
 import com.thock.back.member.in.dto.MemberInfoResponse;
 import com.thock.back.member.in.dto.SignUpRequest;
 import com.thock.back.member.in.dto.SignUpResponse;
-import com.thock.back.member.in.dto.UpdateNameRequest;
+import com.thock.back.member.in.dto.UpdateRoleRequest;
 import com.thock.back.shared.member.domain.MemberRole;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -17,6 +19,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -38,12 +41,18 @@ public class MemberController {
             @ApiResponse(responseCode = "500", description = "서버 내부 오류", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)))
     })
     @PostMapping("/signup")
-    public ResponseEntity<?> signUp(@RequestBody SignUpRequest request) {
+    public ResponseEntity<?> signUp(@Valid @RequestBody SignUpRequest request) {
+
         Long memberId = memberSignUpService.signUp(
-                new SignUpCommand(request.email(), request.name(), request.password())
+                new SignUpCommand(
+                        request.email(),
+                        request.name(),
+                        request.password())
         );
+
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(new SignUpResponse(memberId));
+
     }
 
     @Operation(summary = "내 회원 ID 조회", description = "현재 로그인된 사용자의 회원 ID를 조회합니다. " + "JWT 또는 인증 컨텍스트를 기반으로 회원을 식별합니다.")
@@ -53,23 +62,28 @@ public class MemberController {
             @ApiResponse(responseCode = "500", description = "서버 내부 오류", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)))
     })
     @GetMapping("/me")
-    public ResponseEntity<MemberInfoResponse> getMyInfo() throws Exception {
+    public ResponseEntity<MemberInfoResponse> getMyInfo() {
+
         Long memberId = AuthContext.memberId();
         MemberRole role = AuthContext.role();
 
         return ResponseEntity.ok(new MemberInfoResponse(memberId, role));
+
     }
 
     @PatchMapping("/role")
     public ResponseEntity<?> updateRole(
-            @RequestBody UpdateNameRequest request) throws Exception {
+            @RequestBody UpdateRoleRequest request) {
+
         Long memberId = AuthContext.memberId();
 
         if (memberId == null) {
-            throw new Exception();
+            throw new CustomException(ErrorCode.AUTH_CONTEXT_NOT_FOUND);
         }
 
         memberUpdateService.updateMemberRole(memberId, request.bankCode(), request.accountNumber(), request.accountHolder());
+
         return ResponseEntity.ok().build();
+
     }
 }
