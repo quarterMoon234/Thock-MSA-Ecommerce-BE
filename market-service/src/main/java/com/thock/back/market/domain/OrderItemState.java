@@ -26,7 +26,10 @@ public enum OrderItemState {
     private final String description;
 
     /**
-     * 취소 가능한 상태인지 확인
+     * 주문 취소 가능한 상태인지 확인
+     * 결제 대기
+     * 결제 완료
+     * 상품 준비중
      */
     public boolean isCancellable() {
         return this == PENDING_PAYMENT ||

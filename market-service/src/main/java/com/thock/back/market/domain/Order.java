@@ -75,12 +75,12 @@ public class Order extends BaseIdAndTime {
     }
 
     /**
-     * 주문번호 생성: ORDER-20250119-{UUID 8자리}
+     * 주문번호 생성: ORDER-20250119-{UUID 12자리}
      */
     private String generateOrderNumber() {
         String date = LocalDateTime.now()
                 .format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd"));
-        String uuid = UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+        String uuid = UUID.randomUUID().toString().replace("-", "").substring(0, 12).toUpperCase();
         return "ORDER-" + date + "-" + uuid;
     }
 
@@ -214,9 +214,10 @@ public class Order extends BaseIdAndTime {
     public void cancelItem(Long orderItemId) {
         OrderItem orderItem = items.stream()
                 .filter(item -> item.getId().equals(orderItemId))
-                .findFirst()
+                .findFirst() // 애초에 orderItemId 는 1개 (unique)
                 .orElseThrow(() -> new CustomException(ErrorCode.ORDER_ITEM_NOT_FOUND));
 
+        // 취소 가능 상태가 아니라면
         if (!orderItem.getState().isCancellable()) {
             throw new CustomException(ErrorCode.ORDER_CANNOT_CANCEL);
         }
