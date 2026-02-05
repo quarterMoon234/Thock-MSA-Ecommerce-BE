@@ -33,7 +33,7 @@ public class LoginHistory {
 
     private LoginHistory(Long memberId, boolean success, LocalDateTime loggedInAt) {
         this.memberId = memberId;
-        this.loggedInAt = LocalDateTime.now();
+        this.loggedInAt = loggedInAt;
         this.success = success;
     }
 
