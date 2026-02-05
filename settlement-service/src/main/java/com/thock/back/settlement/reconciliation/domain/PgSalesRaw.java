@@ -6,7 +6,6 @@ import com.thock.back.settlement.reconciliation.domain.enums.PgStatus;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
@@ -36,8 +35,8 @@ public class PgSalesRaw extends BaseCreatedTime {
     @Column(name = "payment_method", length = 50) //varchar(50) or ENUM / POINT, CARD, ETC...
     private PaymentMethod paymentMethod;
 
-    @Column(name = "payment_amount", nullable = false, precision = 18, scale = 4)// DECIMAL(18, 4)
-    private BigDecimal paymentAmount;
+    @Column(name = "payment_amount", nullable = false)
+    private Long paymentAmount;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "pg_status", nullable = false, length = 50)
@@ -51,7 +50,7 @@ public class PgSalesRaw extends BaseCreatedTime {
     //createdAt 상속 받아 사용. 관리자가 엑셀 데이터를 입력한 시점
 
     @Builder
-    public PgSalesRaw(String pgKey, String merchantUid, PaymentMethod paymentMethod, BigDecimal paymentAmount, PgStatus pgStatus, LocalDateTime transactedAt){
+    public PgSalesRaw(String pgKey, String merchantUid, PaymentMethod paymentMethod, Long paymentAmount, PgStatus pgStatus, LocalDateTime transactedAt){
         this.pgKey = pgKey;
         this.merchantUid = merchantUid;
         this.paymentMethod = paymentMethod;

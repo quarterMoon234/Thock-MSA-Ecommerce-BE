@@ -11,4 +11,5 @@ import java.util.Optional;
 public interface SalesLogRepository extends JpaRepository<SalesLog, Long> {
     List<SalesLog> findAllBySettlementStatus(SettlementStatus settlementStatus);
     Optional<SalesLog> findByOrderNoAndTransactionType(String orderNo, TransactionType transactionType);
+    Optional<SalesLog> findByOrderNo(String orderNo);
 }

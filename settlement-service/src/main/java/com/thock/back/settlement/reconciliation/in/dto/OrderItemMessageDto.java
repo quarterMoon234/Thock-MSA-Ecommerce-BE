@@ -4,8 +4,6 @@ import com.thock.back.settlement.reconciliation.domain.SalesLog;
 import com.thock.back.settlement.reconciliation.domain.enums.OrderEventStatus;
 import com.thock.back.settlement.reconciliation.domain.enums.SettlementStatus;
 import com.thock.back.settlement.shared.enums.TransactionType;
-
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Map;
 
@@ -14,8 +12,8 @@ public record OrderItemMessageDto(
         Long sellerId,
         String productName,
         int productQuantity,
-        BigDecimal productAmount,
-        BigDecimal paymentAmount, // 양수로 받고, 서비스에서 음수처리하는게 나을듯
+        Long productAmount,
+        Long paymentAmount, // 양수로 받고, 서비스에서 음수처리하는게 나을듯
         String eventType, // 결제 완료인지, 구매확정인지, 환불인지 알려주는 필드, 이걸 기준으로 결제/환불 매핑
         Map<String, Object> metadata,
         LocalDateTime snapshotAt
@@ -29,9 +27,9 @@ public record OrderItemMessageDto(
         TransactionType transactionType = eventStatus.getTransactionType();
 
         // 환불일 경우 음수로 저장
-        BigDecimal finalAmount = this.paymentAmount;
+        Long finalAmount = this.paymentAmount;
         if(transactionType == TransactionType.REFUND){
-            finalAmount = finalAmount.abs().negate();
+            finalAmount *= (long)-1;
         }
 
         return SalesLog.builder()

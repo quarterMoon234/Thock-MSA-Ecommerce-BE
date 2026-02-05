@@ -8,7 +8,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-import java.math.BigDecimal;
+import java.lang.Long;
 import java.time.LocalDate;
 
 @Entity
@@ -22,6 +22,7 @@ import java.time.LocalDate;
 )
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+// 대사 실패건만 저장하는 테이블
 public class VerificationResult extends BaseCreatedTime {
 
     @Id
@@ -44,13 +45,13 @@ public class VerificationResult extends BaseCreatedTime {
     // 대사 상태 (String, 길이 30 제한)
     // 값 예시: "MATCH", "MISMATCH", / "PG_MISSING", "INTERNAL_MISSING" 이건 일단 보류
     @Enumerated(EnumType.STRING)
-    @Column(name = "status", nullable = false, length = 30)
+    @Column(name = "reconciliation_status", nullable = false, length = 30)
     private ReconciliationStatus reconciliationStatus;
 
     // 차액 (PG금액 - 우리금액)
     // 0이면 정상, 양수/음수면 불일치. 정밀한 돈 계산을 위해 Decimal(18,4)
-    @Column(name = "diff_amount", nullable = false, precision = 18, scale = 4)
-    private BigDecimal diffAmount;
+    @Column(name = "diff_amount", nullable = false)
+    private Long diffAmount;
 
     // 실패 에러 로그 (불일치 사유)
     // 내용이 길어질 수 있으므로 TEXT 타입
@@ -60,12 +61,12 @@ public class VerificationResult extends BaseCreatedTime {
     // createdAt. 결과 생성 시간 (대사 시작 시간) 상속받아 사용
 
     @Builder
-    public VerificationResult(LocalDate baseDate, String orderNo, String pgKey, ReconciliationStatus reconciliationStatus, BigDecimal diffAmount, String errorMessage){
+    public VerificationResult(LocalDate baseDate, String orderNo, String pgKey, ReconciliationStatus reconciliationStatus, Long diffAmount, String errorMessage){
         this.baseDate = baseDate;
         this.orderNo = orderNo;
         this.pgKey = pgKey;
         this.reconciliationStatus = reconciliationStatus;
-        this.diffAmount = diffAmount != null ? diffAmount : BigDecimal.ZERO;
+        this.diffAmount = diffAmount != null ? diffAmount : 0;
         this.errorMessage = errorMessage;
     }
 }

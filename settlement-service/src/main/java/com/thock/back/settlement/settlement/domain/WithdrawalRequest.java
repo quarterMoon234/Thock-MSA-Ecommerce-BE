@@ -7,7 +7,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-import java.math.BigDecimal;
+
 import java.time.LocalDateTime;
 
 @Entity
@@ -24,7 +24,7 @@ public class WithdrawalRequest extends BaseTimeEntity {
     private Long sellerId; // 누가 요청했냐
 
     @Column(name = "withdrawal_amount", nullable = false, precision = 18, scale = 4)
-    private BigDecimal withdrawalAmount; // 얼마 뺄 거냐
+    private Long withdrawalAmount; // 얼마 뺄 거냐
 
     // --- 돈 보낼 곳 (신청 시점의 계좌 정보 스냅샷) ---
     // 나중에 계좌 바꿔도, 신청 당시 계좌로 기록이 남아야 함
@@ -45,7 +45,7 @@ public class WithdrawalRequest extends BaseTimeEntity {
     private LocalDateTime processedAt; // 이체 완료 시간
 
     @Builder
-    public WithdrawalRequest(Long sellerId, BigDecimal withdrawalAmount, SettlementAccount account) {
+    public WithdrawalRequest(Long sellerId, Long withdrawalAmount, SettlementAccount account) {
         this.sellerId = sellerId;
         this.withdrawalAmount = withdrawalAmount;
         // 신청 시점의 계좌 정보를 복사해서 박제(Snapshot)

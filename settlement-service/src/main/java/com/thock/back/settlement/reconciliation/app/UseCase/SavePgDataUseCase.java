@@ -1,4 +1,4 @@
-package com.thock.back.settlement.reconciliation.app;
+package com.thock.back.settlement.reconciliation.app.UseCase;
 
 import com.thock.back.settlement.reconciliation.domain.PgSalesRaw;
 import com.thock.back.settlement.reconciliation.in.dto.PgSalesDto;
@@ -11,13 +11,11 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-public class PgDataService {
-
+public class SavePgDataUseCase {
     private final PgDataRepository pgDataRepository;
 
-    // dto에 이미 생성자로 만드는 로직을 저장해뒀기에, 여기서는 그걸 사용 후 데이터 저장만
     @Transactional
-    public void saveAllPgData(List<PgSalesDto> dtos){
+    public void execute(List<PgSalesDto> dtos){
         List<PgSalesRaw> entities = dtos.stream()
                 .map(PgSalesDto::toEntity)
                 .toList();

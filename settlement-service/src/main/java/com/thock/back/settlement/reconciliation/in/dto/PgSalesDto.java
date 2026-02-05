@@ -4,14 +4,13 @@ import com.thock.back.settlement.reconciliation.domain.PgSalesRaw;
 import com.thock.back.settlement.reconciliation.domain.enums.PaymentMethod;
 import com.thock.back.settlement.reconciliation.domain.enums.PgStatus;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 public record PgSalesDto (
         String pgKey,
         String merchantUid,
         PaymentMethod paymentMethod,
-        BigDecimal paymentAmount,
+        Long paymentAmount,
         PgStatus pgStatus,
         LocalDateTime transactedAt
 ){

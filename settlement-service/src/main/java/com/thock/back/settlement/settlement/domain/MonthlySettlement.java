@@ -8,7 +8,6 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
@@ -40,15 +39,15 @@ public class MonthlySettlement extends BaseTimeEntity {
 
     // 지급 총액 (매출 합계)
     @Column(name = "total_amount", nullable = false, precision = 18, scale = 4)
-    private BigDecimal totalAmount;
+    private Long totalAmount;
 
     // 수수료 총액 (플랫폼 수수료)
     @Column(name = "fee_amount", nullable = false, precision = 18, scale = 4)
-    private BigDecimal feeAmount;
+    private Long feeAmount;
 
     // [실 지급액] = 총액 - 수수료 (실제 이체할 금액)
     @Column(name = "payout_amount", nullable = false, precision = 18, scale = 4)
-    private BigDecimal payoutAmount;
+    private Long payoutAmount;
 
     // 정산 상태 (PENDING, PROCESSING, COMPLETED, FAILED)
     @Enumerated(EnumType.STRING)
@@ -86,14 +85,14 @@ public class MonthlySettlement extends BaseTimeEntity {
 
 
     @Builder
-    public MonthlySettlement(Long sellerId, LocalDate targetDate, BigDecimal totalAmount, BigDecimal feeAmount,
+    public MonthlySettlement(Long sellerId, LocalDate targetDate, Long totalAmount, Long feeAmount,
                              String bankCodeSnapshot, String accountNumberSnapshot, String accountHolderSnapshot) {
         this.sellerId = sellerId;
         this.targetDate = targetDate;
         this.totalAmount = totalAmount;
         this.feeAmount = feeAmount;
         // 실 지급액은 생성 시점에 자동 계산 (미리 넣어놓기)
-        this.payoutAmount = totalAmount.subtract(feeAmount);
+        this.payoutAmount = totalAmount - feeAmount;
         this.monthlySettlementStatus = MonthlySettlementStatus.PENDING; // 초기 상태는 무조건 PENDING
         this.bankCodeSnapshot = bankCodeSnapshot;
         this.accountNumberSnapshot = accountNumberSnapshot;

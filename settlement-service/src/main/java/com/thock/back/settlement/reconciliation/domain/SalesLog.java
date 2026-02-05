@@ -2,13 +2,13 @@ package com.thock.back.settlement.reconciliation.domain;
 
 import com.thock.back.global.jpa.entity.BaseTimeEntity;
 import com.thock.back.settlement.reconciliation.domain.enums.PaymentMethod;
+import com.thock.back.settlement.reconciliation.domain.enums.ReconciliationStatus;
 import com.thock.back.settlement.reconciliation.domain.enums.SettlementStatus;
 import com.thock.back.settlement.shared.converter.MapToJsonConverter;
 import com.thock.back.settlement.shared.enums.TransactionType;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Map;
 
@@ -46,13 +46,13 @@ public class SalesLog extends BaseTimeEntity { // updated_at 포함됨
     private int productQuantity;
 
     // 정가 기준 총 판매액 (할인 전)
-    @Column(name = "product_amount", nullable = false, precision = 18, scale = 4)
-    private BigDecimal productAmount;
+    @Column(name = "product_amount", nullable = false)
+    private Long productAmount;
 
     // 실제 결제 금액 (최종 정산 대상 금액)
     // 환불일 경우 마이너스가 들어올 수 있음
-    @Column(name = "payment_amount", nullable = false, precision = 18, scale = 4)
-    private BigDecimal paymentAmount;
+    @Column(name = "payment_amount", nullable = false)
+    private Long paymentAmount;
 
     // 결제 수단 (CARD, NAVER_PAY 등)
     @Enumerated(EnumType.STRING)
@@ -85,9 +85,14 @@ public class SalesLog extends BaseTimeEntity { // updated_at 포함됨
     @Column(name = "settlement_status", nullable = false, length = 30)
     private SettlementStatus settlementStatus = SettlementStatus.WAIT;
 
+    @Builder.Default
+    @Enumerated(EnumType.STRING)
+    @Column(name = "reconciliation_status", nullable = false, length = 30)
+    private ReconciliationStatus reconciliationStatus = ReconciliationStatus.PENDING;
+
     @Builder
-    public SalesLog(String orderNo, Long sellerId, BigDecimal productAmount,
-                    BigDecimal paymentAmount, PaymentMethod paymentMethod,
+    public SalesLog(String orderNo, Long sellerId, Long productAmount,
+                    Long paymentAmount, PaymentMethod paymentMethod,
                     TransactionType transactionType, Map<String, Object> metadata,
                     LocalDateTime snapshotAt) {
         this.orderNo = orderNo;
@@ -101,18 +106,34 @@ public class SalesLog extends BaseTimeEntity { // updated_at 포함됨
 
         // 초기 상태 설정
         this.settlementStatus = SettlementStatus.WAIT; // 기본값: 대기
+        this.reconciliationStatus = ReconciliationStatus.PENDING;
     }
 
-    // --- 비즈니스 로직 메서드 ---
+    // --- 비즈니스 로직 메소드 ---
 
-    // 정산 준비 완료 (대사 끝남)
+    // 1. 대사 관련 필드 메소드
+
+    public void matchReconciliation() {
+        this.reconciliationStatus = ReconciliationStatus.MATCH;
+    }
+    public void mismatchReconciliation(){
+        this.reconciliationStatus = ReconciliationStatus.MISMATCH;
+    }
+
+    // 2. 정산 관련 필드 메소드
+
     public void readySettlement() {
         this.settlementStatus = SettlementStatus.READY;
     }
 
-    // 정산 확정 (월별 정산서에 포함됨)
+    public void completeReconciliation() {
+        this.reconciliationStatus = ReconciliationStatus.MATCH;
+    }
+
     public void completeSettlement(Long monthlySettlementId) {
         this.monthlySettlementId = monthlySettlementId;
         this.settlementStatus = SettlementStatus.COMPLETED;
     }
+
+
 }
