@@ -10,10 +10,10 @@ import com.thock.back.member.domain.entity.Member;
 import com.thock.back.member.out.CredentialRepository;
 import com.thock.back.member.out.MemberRepository;
 import com.thock.back.shared.member.event.MemberJoinedEvent;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
