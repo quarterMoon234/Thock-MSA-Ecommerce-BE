@@ -6,5 +6,6 @@ public enum PaymentStatus {
     PG_PAID,     // PG 결제 완료
     COMPLETED,   // 지갑까지 모두 반영 완료
     FAILED,      // 실패
-    CANCELED     // 취소
+    CANCELED,     // 취소
+    PARTIALLY_CANCELED // 부분 취소
 }
