@@ -14,12 +14,14 @@ import com.thock.back.payment.out.*;
 import com.thock.back.shared.member.domain.MemberState;
 import com.thock.back.shared.payment.dto.WalletDto;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class PaymentFindUseCase {
     private final PaymentRepository paymentRepository;
     private final PaymentMemberRepository paymentMemberRepository;
@@ -30,12 +32,17 @@ public class PaymentFindUseCase {
 
     public WalletDto walletFindByMemberId(Long memberId) {
         Wallet wallet = walletRepository.findByHolderId(memberId)
-                .orElseThrow(() -> new CustomException(ErrorCode.WALLET_NOT_FOUND));
+                .orElseThrow(() -> {
+                    log.error("지갑 조회 실패 - memberId={}", memberId);
+                    return new CustomException(ErrorCode.WALLET_NOT_FOUND);
+                });
 
-        if(wallet.getHolder().getState() == MemberState.INACTIVE){
+        if (wallet.getHolder().getState() == MemberState.INACTIVE) {
+            log.error("비활성화된 지갑 접근 시도 - memberId={}", memberId);
             throw new CustomException(ErrorCode.WALLET_IS_LOCKED);
         }
 
+        log.info("지갑 조회 완료 - memberId={}", memberId);
         return new WalletDto(
                 wallet.getId(),
                 wallet.getHolder().getId(),
@@ -49,14 +56,19 @@ public class PaymentFindUseCase {
 
     public WalletLogResponseDto getWalletLog(Long memberId) {
         Wallet wallet = walletRepository.findByHolderId(memberId)
-                .orElseThrow(() -> new CustomException(ErrorCode.WALLET_NOT_FOUND));
+                .orElseThrow(() -> {
+                    log.error("지갑 조회 실패 - memberId={}", memberId);
+                    return new CustomException(ErrorCode.WALLET_NOT_FOUND);
+                });
 
-        if(wallet.getHolder().getState() == MemberState.INACTIVE){
+        if (wallet.getHolder().getState() == MemberState.INACTIVE) {
+            log.error("비활성화된 지갑 접근 시도 - memberId={}", memberId);
             throw new CustomException(ErrorCode.WALLET_IS_LOCKED);
         }
 
         List<WalletLog> logs = walletLogRepository.findByWalletId(wallet.getId());
 
+        log.info("지갑 로그 조회 완료 - memberId={}, logCount={}", memberId, logs.size());
         return new WalletLogResponseDto(
                 memberId,
                 wallet.getId(),
@@ -66,14 +78,19 @@ public class PaymentFindUseCase {
 
     public RevenueLogResponseDto getRevenueLog(Long memberId) {
         Wallet wallet = walletRepository.findByHolderId(memberId)
-                .orElseThrow(() -> new CustomException(ErrorCode.WALLET_NOT_FOUND));
+                .orElseThrow(() -> {
+                    log.error("지갑 조회 실패 - memberId={}", memberId);
+                    return new CustomException(ErrorCode.WALLET_NOT_FOUND);
+                });
 
-        if(wallet.getHolder().getState() == MemberState.INACTIVE){
+        if (wallet.getHolder().getState() == MemberState.INACTIVE) {
+            log.error("비활성화된 지갑 접근 시도 - memberId={}", memberId);
             throw new CustomException(ErrorCode.WALLET_IS_LOCKED);
         }
 
         List<RevenueLog> logs = revenueLogRepository.findByWalletId(wallet.getId());
 
+        log.info("수익 로그 조회 완료 - memberId={}, logCount={}", memberId, logs.size());
         return new RevenueLogResponseDto(
                 memberId,
                 wallet.getId(),
@@ -84,6 +101,7 @@ public class PaymentFindUseCase {
     public PaymentLogResponseDto getPaymentLog(Long memberId) {
         List<PaymentLog> logs = paymentLogRepository.findByBuyerId(memberId);
 
+        log.info("결제 로그 조회 완료 - memberId={}, logCount={}", memberId, logs.size());
         return new PaymentLogResponseDto(
                 memberId,
                 logs
