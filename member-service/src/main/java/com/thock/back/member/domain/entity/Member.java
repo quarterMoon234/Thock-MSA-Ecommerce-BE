@@ -1,5 +1,7 @@
 package com.thock.back.member.domain.entity;
 
+import com.thock.back.global.exception.CustomException;
+import com.thock.back.global.exception.ErrorCode;
 import jakarta.persistence.*;
 import com.thock.back.shared.member.domain.MemberRole;
 import com.thock.back.shared.member.domain.MemberState;
@@ -10,9 +12,11 @@ import jakarta.persistence.Entity;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 import java.time.LocalDateTime;
 
+@Slf4j
 @Entity
 @Table(name = "member_members")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -48,6 +52,23 @@ public class Member extends SourceMember {
 
     public boolean isInActive() {
         return this.getState() == MemberState.INACTIVE;
+    }
+
+    public void promoteToSeller(String bankCode, String accountNumber, String accountHolder) {
+        if (this.getRole() != MemberRole.USER) {
+            throw new CustomException(ErrorCode.INVALID_ROLE_PROMOTION);
+        }
+
+        if (bankCode == null || accountNumber == null || accountHolder == null) {
+            throw new CustomException(ErrorCode.MISSING_BANKING_INFORMATION);
+        }
+
+        log.info("[MEMBER] Member promoted to seller. memberId={}", this.getId());
+
+        this.setRole(MemberRole.SELLER);
+        this.setBankCode(bankCode);
+        this.setAccountNumber(accountNumber);
+        this.setAccountHolder(accountHolder);
     }
 
     public MemberDto toDto(){
