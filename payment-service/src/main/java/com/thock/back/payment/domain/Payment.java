@@ -35,12 +35,14 @@ public class Payment extends BaseIdAndTime {
 
     @Version   // 낙관적 락 추가
     private Long version;
+
     public Payment(Long pgAmount, PaymentMember buyer, PaymentStatus status, String orderId, Long amount, String paymentKey) {
         this.pgAmount = pgAmount;
         this.buyer = buyer;
         this.status = status;
         this.orderId = orderId;
         this.amount = amount;
+        this.refundedAmount = 0L;
         this.paymentKey = paymentKey;
     }
 
@@ -52,7 +54,8 @@ public class Payment extends BaseIdAndTime {
                 getBuyer().getId(),
                 getPgAmount(),
                 getAmount(),
-                getCreatedAt()
+                getCreatedAt(),
+                getRefundedAmount()
         );
     }
     public void createPaymentLogEvent(){
@@ -72,7 +75,7 @@ public class Payment extends BaseIdAndTime {
     }
 
     public boolean updatePaymentRefundedAmount(Long amount){
-        if(this.refundedAmount+amount>this.amount){
+        if (this.refundedAmount+amount>this.amount){
             throw new CustomException(ErrorCode.INVALID_REFUND_AMOUNT);
         }
         this.refundedAmount += amount;

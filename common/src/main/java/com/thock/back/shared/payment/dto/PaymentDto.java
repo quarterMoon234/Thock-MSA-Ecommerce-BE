@@ -9,5 +9,6 @@ public record PaymentDto(
         Long buyerId,
         Long pgAmount,
         Long amount,
-        LocalDateTime createdAt
+        LocalDateTime createdAt,
+        Long refundedAmount
 ) {}
