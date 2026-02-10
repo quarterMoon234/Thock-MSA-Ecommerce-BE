@@ -43,7 +43,7 @@ public class ApiV1CartController {
             @ApiResponse(responseCode = "500", description = "서버 내부 오류 (상품 정보 조회 실패 등)", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)))
     })
     @GetMapping
-    public ResponseEntity<CartItemListResponse> getCartItems(@AuthUser AuthenticatedUser user) throws Exception {
+    public ResponseEntity<CartItemListResponse> getCartItems(@AuthUser AuthenticatedUser user) {
         Long memberId = user.memberId();
         log.info("Market Cart API : getCartItems / memberId = {}", memberId);
         CartItemListResponse response = marketFacade.getCartItems(memberId);
@@ -68,7 +68,7 @@ public class ApiV1CartController {
     @PostMapping("/items")
     public ResponseEntity<CartItemResponse> addCartItem(
             @AuthUser AuthenticatedUser user,
-            @Valid @RequestBody CartItemAddRequest request) throws Exception {
+            @Valid @RequestBody CartItemAddRequest request) {
         Long memberId = user.memberId();
         log.info("Market Cart API : addCartItem / memberId = {}", memberId);
         CartItemResponse response = marketFacade.addCartItem(memberId, request);
@@ -92,7 +92,7 @@ public class ApiV1CartController {
     @DeleteMapping("/items")
     public ResponseEntity<Void> clearCart(
             @AuthUser AuthenticatedUser user,
-            @RequestBody List<Long> productIds) throws Exception {
+            @RequestBody List<Long> productIds) {
         Long memberId = user.memberId();
         log.info("Market Cart API : clearCart / memberId = {}, productIdConunt = {}, productIds = {}", memberId, productIds.size(), productIds);
 
