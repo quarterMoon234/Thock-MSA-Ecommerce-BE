@@ -35,7 +35,10 @@ import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
-@SpringBootTest(properties = "spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration")
+@SpringBootTest(properties = {
+        "spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration,org.springframework.boot.autoconfigure.kafka.KafkaAutoConfiguration",
+        "spring.kafka.listener.auto-startup=false"
+})
 class PaymentConfirmServiceTest {
 
     private static MockWebServer mockWebServer;
@@ -83,6 +86,17 @@ class PaymentConfirmServiceTest {
 
     @BeforeEach
     void setUp() {
+        // MockWebServer 응답 큐 초기화를 위해 Dispatcher 설정
+        mockWebServer.setDispatcher(new okhttp3.mockwebserver.Dispatcher() {
+            @Override
+            public MockResponse dispatch(okhttp3.mockwebserver.RecordedRequest request) {
+                return new MockResponse().setResponseCode(404);
+            }
+        });
+        // 기본 Dispatcher로 복원 (enqueue 사용을 위해)
+        mockWebServer.setDispatcher(new okhttp3.mockwebserver.QueueDispatcher());
+
+
         testMember = new PaymentMember(
                 "test@test.com",
                 "테스트유저",

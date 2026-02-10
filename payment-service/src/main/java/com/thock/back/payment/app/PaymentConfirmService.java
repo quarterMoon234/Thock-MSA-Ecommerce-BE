@@ -242,6 +242,16 @@ public class PaymentConfirmService {
                     wallet.createBalanceLogEvent(req.amount(), EventType.부분취소_입금);
                     log.info("토스 부분 환불 완료 - orderId={}, refundAmount={}", req.orderId(), amount);
                 }
+                // 환불 완료 이벤트 발행
+                eventPublisher.publish(
+                        new PaymentRefundCompletedEvent(
+                                new RefundResponseDto(
+                                        payment.getBuyer().getId(),
+                                        payment.getOrderId(),
+                                        amount
+                                )
+                        )
+                );
             }
             else {
                 // 전액 환불
@@ -253,19 +263,18 @@ public class PaymentConfirmService {
                     wallet.createBalanceLogEvent(payment.getAmount(), EventType.전체취소_입금);
                     log.info("토스 전액 환불 완료 - orderId={}, refundAmount={}", req.orderId(), amount);
                 }
+                // 환불 완료 이벤트 발행
+                eventPublisher.publish(
+                        new PaymentRefundCompletedEvent(
+                                new RefundResponseDto(
+                                        payment.getBuyer().getId(),
+                                        payment.getOrderId(),
+                                        amount
+                                )
+                        )
+                );
             }
-            // 환불 완료 이벤트 발행
-            eventPublisher.publish(
-                    new PaymentRefundCompletedEvent(
-                            new RefundResponseDto(
-                                    payment.getBuyer().getId(),
-                                    payment.getOrderId(),
-                                    amount
-                            )
-                    )
-            );
         }
-
     }
 
     /**
