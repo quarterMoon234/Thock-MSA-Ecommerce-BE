@@ -49,10 +49,7 @@ public class PaymentConfirmService {
     /**
      * 토스페이먼츠 검증 기능
      **/
-    @Retryable(
-            retryFor = OptimisticLockException.class,
-            maxAttempts = 3
-    )
+
     @Transactional
     public Map<String, Object> confirmPayment(PaymentConfirmRequestDto req) {
         Payment payment = paymentRepository.findByOrderId(req.getOrderId())
@@ -113,6 +110,7 @@ public class PaymentConfirmService {
         Integer approvedAmount = (Integer) confirmResponse.get("totalAmount");
         if (!payment.getPgAmount().equals(approvedAmount.longValue())) {
             log.error("토스 결제 금액 불일치 - orderId={}, expected={}, actual={}", req.getOrderId(), payment.getPgAmount(), approvedAmount);
+            //TODO: 지금 금액이 맞지 않는 경우에 취소하고있는데 중간단계를 만들까 생각중
             payment.updatePaymentStatus(PaymentStatus.CANCELED);
             throw new CustomException(ErrorCode.TOSS_AMOUNT_NOT_MATCH);
         }
@@ -168,7 +166,7 @@ public class PaymentConfirmService {
                 });
 
         // 상태 체크
-        if (payment.getStatus() == PaymentStatus.CANCELED) {
+        if (payment.getStatus() == PaymentStatus.CANCELED || payment.getStatus() == PaymentStatus.REQUESTED) {
             log.error("이미 취소된 결제입니다 - orderId={}", req.orderId());
             throw new CustomException(ErrorCode.PAYMENT_NOT_COMPLETE);
         }
@@ -286,7 +284,7 @@ public class PaymentConfirmService {
                 });
 
         // 상태 체크 - 유저가 부분취소를 여러번 할 수 있음
-        if (payment.getStatus() == PaymentStatus.CANCELED) {
+        if (payment.getStatus() == PaymentStatus.CANCELED || payment.getStatus() == PaymentStatus.REQUESTED) {
             log.error("이미 취소된 결제입니다 - orderId={}", req.orderId());
             throw new CustomException(ErrorCode.PAYMENT_NOT_COMPLETE);
         }
