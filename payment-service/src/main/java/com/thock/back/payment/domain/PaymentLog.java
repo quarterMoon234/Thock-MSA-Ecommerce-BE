@@ -6,6 +6,8 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
+
 import static jakarta.persistence.FetchType.LAZY;
 
 @Entity
@@ -28,6 +30,8 @@ public class PaymentLog extends BaseIdAndTime {
     @ManyToOne(fetch = LAZY)
     private Payment payment;
 
+    private Long RefundedAmount;
+
     public PaymentLog(PaymentMember buyer, String orderId, PaymentStatus paymentStatus, Long amount, Long pgAmount, Payment payment) {
         this.buyer = buyer;
         this.orderId = orderId;
@@ -35,5 +39,6 @@ public class PaymentLog extends BaseIdAndTime {
         this.amount = amount;
         this.pgAmount = pgAmount;
         this.payment = payment;
+        this.RefundedAmount = 0L;
     }
 }

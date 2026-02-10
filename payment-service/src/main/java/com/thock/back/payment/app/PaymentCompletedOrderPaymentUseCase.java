@@ -62,7 +62,8 @@ public class PaymentCompletedOrderPaymentUseCase {
                 payment.getBuyer().getId(),
                 payment.getPgAmount(),
                 payment.getAmount(),
-                payment.getCreatedAt());
+                payment.getCreatedAt(),
+                payment.getRefundedAmount());
 
         eventPublisher.publish(
                 new PaymentCompletedEvent(

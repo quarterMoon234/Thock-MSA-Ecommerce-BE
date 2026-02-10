@@ -39,9 +39,11 @@ public class PaymentConfirmService {
     private final WalletRepository walletRepository;
     private final PaymentMemberRepository paymentMemberRepository;
     private final EventPublisher eventPublisher;
-    private static final String TOSS_BASE_URL = "https://api.tosspayments.com";
     private static final String CONFIRM_PATH = "/v1/payments/confirm";
     private static final String CANCEL_PATH = "/v1/payments/{paymentKey}/cancel";
+
+    @Value("${custom.payment.toss.baseUrl:https://api.tosspayments.com}")
+    private String tossBaseUrl;
 
     @Value("${custom.payment.toss.payments.secretKey}")
     private String tossSecretKey;
@@ -73,14 +75,16 @@ public class PaymentConfirmService {
             throw new CustomException(ErrorCode.PAYMENT_NOT_REQUEST);
         }
 
+        // 바디 채우기
         Map<String, Object> body = Map.of(
                 "paymentKey", req.getPaymentKey(),
                 "orderId", req.getOrderId(),
                 "amount", req.getAmount()
         );
 
+        // 외부 API 통신
         Map<String, Object> confirmResponse = WebClient.builder()
-                .baseUrl(TOSS_BASE_URL)
+                .baseUrl(tossBaseUrl)
                 .defaultHeaders(headers -> {
                     String auth = Base64.getEncoder()
                             .encodeToString((tossSecretKey + ":").getBytes());
@@ -127,7 +131,9 @@ public class PaymentConfirmService {
                                                 payment.getBuyer().getId(),
                                                 payment.getPgAmount(),
                                                 payment.getAmount(),
-                                                payment.getCreatedAt());
+                                                payment.getCreatedAt(),
+                                                payment.getRefundedAmount()
+        );
         eventPublisher.publish(
                 new PaymentCompletedEvent(
                         paymentDto
@@ -190,9 +196,9 @@ public class PaymentConfirmService {
                 "cancelAmount", req.amount()
         );
 
-        // WebClient
+        // 외부 api 통신
         Map<String, Object> confirmResponse = WebClient.builder()
-                .baseUrl(TOSS_BASE_URL)
+                .baseUrl(tossBaseUrl)
                 .defaultHeaders(headers -> {
                     String auth = Base64.getEncoder()
                             .encodeToString((tossSecretKey + ":").getBytes());
@@ -236,7 +242,18 @@ public class PaymentConfirmService {
                     wallet.createBalanceLogEvent(req.amount(), EventType.부분취소_입금);
                     log.info("토스 부분 환불 완료 - orderId={}, refundAmount={}", req.orderId(), amount);
                 }
-            } else {
+                // 환불 완료 이벤트 발행
+                eventPublisher.publish(
+                        new PaymentRefundCompletedEvent(
+                                new RefundResponseDto(
+                                        payment.getBuyer().getId(),
+                                        payment.getOrderId(),
+                                        amount
+                                )
+                        )
+                );
+            }
+            else {
                 // 전액 환불
                 if(payment.updatePaymentRefundedAmount(amount)) {
                     payment.updatePaymentStatus(PaymentStatus.CANCELED);
@@ -246,19 +263,18 @@ public class PaymentConfirmService {
                     wallet.createBalanceLogEvent(payment.getAmount(), EventType.전체취소_입금);
                     log.info("토스 전액 환불 완료 - orderId={}, refundAmount={}", req.orderId(), amount);
                 }
+                // 환불 완료 이벤트 발행
+                eventPublisher.publish(
+                        new PaymentRefundCompletedEvent(
+                                new RefundResponseDto(
+                                        payment.getBuyer().getId(),
+                                        payment.getOrderId(),
+                                        amount
+                                )
+                        )
+                );
             }
-            // 환불 완료 이벤트 발행
-            eventPublisher.publish(
-                    new PaymentRefundCompletedEvent(
-                            new RefundResponseDto(
-                                    payment.getBuyer().getId(),
-                                    payment.getOrderId(),
-                                    amount
-                            )
-                    )
-            );
         }
-
     }
 
     /**
@@ -294,8 +310,8 @@ public class PaymentConfirmService {
             log.error("환불 금액이 유효하지 않습니다 - orderId={}, amount={}", req.orderId(), req.amount());
             throw new CustomException(ErrorCode.INVALID_REFUND_AMOUNT);
         }
-
-        // 3. 전액 환불
+        // 3. 환불
+        // 전액 환불
         if (req.amount().equals(payment.getAmount())) {
             if (payment.updatePaymentRefundedAmount(req.amount())) {
                 payment.updatePaymentStatus(PaymentStatus.CANCELED);
@@ -305,16 +321,26 @@ public class PaymentConfirmService {
                 wallet.createBalanceLogEvent(req.amount(), EventType.전체취소_입금);
                 log.info("내부 결제 전액 환불 완료 - orderId={}, refundAmount={}", req.orderId(), req.amount());
             }
-            // 4. 부분 환불
-            else {
-                if (payment.updatePaymentRefundedAmount(req.amount())) {
-                    payment.updatePaymentStatus(PaymentStatus.PARTIALLY_CANCELED);
-                    paymentRepository.save(payment);
-                    wallet.depositBalance(req.amount());
-                    walletRepository.save(wallet);
-                    wallet.createBalanceLogEvent(req.amount(), EventType.부분취소_입금);
-                    log.info("내부 결제 부분 환불 완료 - orderId={}, refundAmount={}", req.orderId(), req.amount());
-                }
+            // 환불 완료 이벤트 발행
+            eventPublisher.publish(
+                    new PaymentRefundCompletedEvent(
+                            new RefundResponseDto(
+                                    payment.getBuyer().getId(),
+                                    payment.getOrderId(),
+                                    req.amount()
+                            )
+                    )
+            );
+        }
+        // 부분 환불
+        else {
+            if (payment.updatePaymentRefundedAmount(req.amount())) {
+                payment.updatePaymentStatus(PaymentStatus.PARTIALLY_CANCELED);
+                paymentRepository.save(payment);
+                wallet.depositBalance(req.amount());
+                walletRepository.save(wallet);
+                wallet.createBalanceLogEvent(req.amount(), EventType.부분취소_입금);
+                log.info("내부 결제 부분 환불 완료 - orderId={}, refundAmount={}", req.orderId(), req.amount());
             }
             // 환불 완료 이벤트 발행
             eventPublisher.publish(
