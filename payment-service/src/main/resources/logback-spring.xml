@@ -23,6 +23,13 @@
         <appender-ref ref="CONSOLE"/>
     </logger>
 
+    <!-- Service Logger (Info/Error 분리) -->
+    <logger name="com.thock.back.payment.app" level="INFO" additivity="false">
+        <appender-ref ref="SERVICE_INFO_FILE"/>
+        <appender-ref ref="SERVICE_ERROR_FILE"/>
+        <appender-ref ref="CONSOLE"/>
+    </logger>
+
     <!-- Root Logger -->
     <root level="INFO">
         <appender-ref ref="APP_FILE"/>

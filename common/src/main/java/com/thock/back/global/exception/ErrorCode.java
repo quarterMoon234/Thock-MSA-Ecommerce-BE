@@ -98,7 +98,8 @@ public enum ErrorCode {
     PAYMENT_UNKNOWN_ORDER_NUMBER("PAYMENT-404-1", "주문번호에 맞는 결제정보가 없습니다.", HttpStatus.NOT_FOUND),
     REFUND_NOT_CANCEL_REASON("REFUND-404-1", "환불 사유가 비어있습니다.", HttpStatus.NOT_FOUND),
     TOSS_REJECTED("PAYMENT-402-1", "PG에서 결제가 거절되었습니다.", HttpStatus.PAYMENT_REQUIRED),
-    PAYMENT_NOT_MATCH_MEMBER("PAYMENT-400-11", "요청 멤버하고 결제 멤버하고 다릅니다.", HttpStatus.BAD_REQUEST);
+    PAYMENT_NOT_MATCH_MEMBER("PAYMENT-400-11", "요청 멤버하고 결제 멤버하고 다릅니다.", HttpStatus.BAD_REQUEST),
+    INVALID_REFUND_AMOUNT("REFUND-400-1", "환불 금액이 올바르지 않습니다.", HttpStatus.BAD_REQUEST);
     // ===== 정산 =====
 
     ;

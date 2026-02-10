@@ -68,6 +68,42 @@
         </encoder>
     </appender>
 
+    <!-- Service Info Log - JSON 형식 -->
+    <appender name="SERVICE_INFO_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_PATH}/service-info.log</file>
+        <filter class="ch.qos.logback.classic.filter.LevelFilter">
+            <level>INFO</level>
+            <onMatch>ACCEPT</onMatch>
+            <onMismatch>DENY</onMismatch>
+        </filter>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_PATH}/service-info.%d{yyyy-MM-dd}.log</fileNamePattern>
+            <maxHistory>30</maxHistory>
+            <totalSizeCap>1GB</totalSizeCap>
+        </rollingPolicy>
+        <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+            <customFields>{"log_type":"service-info"}</customFields>
+            <timeZone>Asia/Seoul</timeZone>
+        </encoder>
+    </appender>
+
+    <!-- Service Error Log - JSON 형식 -->
+    <appender name="SERVICE_ERROR_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_PATH}/service-error.log</file>
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>ERROR</level>
+        </filter>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_PATH}/service-error.%d{yyyy-MM-dd}.log</fileNamePattern>
+            <maxHistory>30</maxHistory>
+            <totalSizeCap>1GB</totalSizeCap>
+        </rollingPolicy>
+        <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+            <customFields>{"log_type":"service-error"}</customFields>
+            <timeZone>Asia/Seoul</timeZone>
+        </encoder>
+    </appender>
+
     <!-- Kafka 내부 로그 레벨 조정 -->
     <logger name="org.apache.kafka" level="WARN"/>
     <logger name="org.springframework.kafka" level="WARN"/>
