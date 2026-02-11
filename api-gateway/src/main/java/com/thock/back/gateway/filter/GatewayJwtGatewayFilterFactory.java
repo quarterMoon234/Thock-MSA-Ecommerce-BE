@@ -18,12 +18,12 @@ import java.util.List;
 
 @Slf4j
 @Component
-public class GatewayJwtFilter extends AbstractGatewayFilterFactory<GatewayJwtFilter.Config> {
+public class GatewayJwtGatewayFilterFactory extends AbstractGatewayFilterFactory<GatewayJwtGatewayFilterFactory.Config> {
 
     private final JwtValidator jwtValidator;
     private final AntPathMatcher pathMatcher = new AntPathMatcher();
 
-    public GatewayJwtFilter(JwtValidator jwtValidator) {
+    public GatewayJwtGatewayFilterFactory(JwtValidator jwtValidator) {
         super(Config.class);
         this.jwtValidator = jwtValidator;
     }
