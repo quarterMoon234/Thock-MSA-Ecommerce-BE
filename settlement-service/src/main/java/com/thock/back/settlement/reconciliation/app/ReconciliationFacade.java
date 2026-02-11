@@ -23,17 +23,17 @@ public class ReconciliationFacade {
 
     // 1. 주문서를 받아와서 저장하는 로직(결제 완료의 주문서, 환불의 주문서)
     @Transactional
-    public void receiveOrderItems(OrderItemMessageDto dto){
+    public void receiveOrderItems(OrderItemMessageDto dto) {
         saveSalesLogUseCase.execute(dto);
     }
     // 2. PG사의 주문서 저장하는 로직
     @Transactional
-    public void receivePgData(List<PgSalesDto> dtos){
+    public void receivePgData(List<PgSalesDto> dtos) {
         savePgDataUseCase.execute(dtos);
     }
     // 3. 1번과 2번의 데이터가 일치하는지 검증하는 로직
     @Transactional
-    public void runReconciliation(LocalDate targetDate){
+    public void runReconciliation(LocalDate targetDate) {
         runReconciliationUseCase.execute(targetDate);
     }
 

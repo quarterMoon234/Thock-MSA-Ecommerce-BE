@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Table(name = "finance_settlement_daily_item") // 상세 테이블
 public class DailySettlementItem {
-
+// TODO 합계 0원 짜리는 담으면 안됨!
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 

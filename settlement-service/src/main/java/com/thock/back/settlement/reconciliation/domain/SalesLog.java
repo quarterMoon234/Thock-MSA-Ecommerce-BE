@@ -48,8 +48,8 @@ public class SalesLog extends BaseTimeEntity { // updated_at 포함됨
     private int productQuantity;
 
     // 정가 기준 총 판매액 (할인 전)
-    @Column(name = "product_amount", nullable = false)
-    private Long productAmount;
+    @Column(name = "product_price", nullable = false)
+    private Long productPrice;
 
     // 실제 결제 금액 (최종 정산 대상 금액)
     // 환불일 경우 마이너스가 들어올 수 있음
@@ -92,14 +92,14 @@ public class SalesLog extends BaseTimeEntity { // updated_at 포함됨
 
     // 생성자 필드
     @Builder
-    public SalesLog(String orderNo, Long sellerId, Long productId, Long productAmount,
+    public SalesLog(String orderNo, Long sellerId, Long productId, Long productPrice,
                     Long paymentAmount, PaymentMethod paymentMethod,
                     TransactionType transactionType, Map<String, Object> metadata,
                     LocalDateTime snapshotAt) {
         this.orderNo = orderNo;
         this.sellerId = sellerId;
         this.productId = productId;
-        this.productAmount = productAmount;
+        this.productPrice = productPrice;
         this.paymentAmount = paymentAmount;
         this.paymentMethod = paymentMethod;
         this.transactionType = transactionType;

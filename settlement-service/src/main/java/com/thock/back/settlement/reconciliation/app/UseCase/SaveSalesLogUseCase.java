@@ -7,7 +7,9 @@ import com.thock.back.settlement.reconciliation.out.SalesLogRepository;
 import com.thock.back.settlement.shared.enums.TransactionType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+@Transactional
 @Service
 @RequiredArgsConstructor
 public class SaveSalesLogUseCase {
@@ -35,7 +37,7 @@ public class SaveSalesLogUseCase {
             }
 
             case REFUND_COMPLETED -> {
-                // 환불건은 바로 대사 + 정산(상계처리)가 진행되어야함
+                // 환불건은 바로 대사, 정산대상이 되어야함
                 // 여기도 부분 환불이 있을 수 있지만, 새로운 주문 내역이 insert 되는 것이기에
                 // 조회를 할 필요가 없으니 상관 X
                 // 하지만 이렇게 되면 판매자는 물건을 팔지도 않았는데 돈을 뺏기는 상황이 나타남.

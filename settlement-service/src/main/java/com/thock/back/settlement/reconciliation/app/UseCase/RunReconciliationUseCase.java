@@ -21,6 +21,8 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -30,6 +32,7 @@ public class RunReconciliationUseCase {
     private final PgSalesRawRepository pgSalesRawRepository;
     private final ReconciliationJobRepository jobRepository;
     private final ReconciliationMismatchLogRepository mismatchLogRepository;
+
 
     @Transactional
     public void execute(LocalDate date) {
@@ -45,57 +48,79 @@ public class RunReconciliationUseCase {
         LocalDateTime endOfDay = date.atTime(LocalTime.MAX);
         List<PgSalesRaw> pgList = pgSalesRawRepository.findAllByTransactedAtBetween(startOfDay, endOfDay);
 
+        // 부분 환불, 부분 확정을 도입하면서 PG사의 데이터를 일대일로 비교할 수 없게됐음.
+        // 이에 따라 주문번호 + 가격으로 그루핑 해서 map에 저장 후, 그 값을 DB 값과 비교.
+        // TODO: MVP 단계에서는 대용량을 생각하지 말고, 기능구현에 집중. 이후 Batch 도입 고려
+
+        Map<String, Long> pgSumMap = pgList.stream()
+                .collect(Collectors.groupingBy(
+                        pg -> pg.getMerchantUid() + "_" + pg.getPgStatus().name(),
+                        Collectors.summingLong(PgSalesRaw::getPaymentAmount)
+                ));
+
         int successCount = 0;
         int mismatchCount = 0;
 
-        for (PgSalesRaw pgSale : pgList) {
+        // 중복 검사 체크용 리스트
+        List<String> processedKeys = pgSumMap.keySet().stream().toList();
 
-            // 1. PgStatus - TransactionType의 관계는 PAID-PAYMENT, CANCELED-CANCEL 두개 밖에 없다 가정
-            // 서로 매핑 시켜줌
-            TransactionType targetType = convertToTransactionType(pgSale.getPgStatus());
+        // 여기서 key = 주문번호_PG상태
+        for (String key : processedKeys) {
+            String[] split = key.split("_");
+            String merchantUid = split[0];
+            PgStatus pgStatus = PgStatus.valueOf(split[1]);
+            Long pgTotalAmount = pgSumMap.get(key);
+
+            //
+            TransactionType targetType = convertToTransactionType(pgStatus);
             if (targetType == null) continue;
 
-            // 2. PG데이터 기준으로 내부 데이터 검색
             List<SalesLog> internalLogs = salesLogRepository.findByOrderNoAndTransactionType(
-                    pgSale.getMerchantUid(),
+                    merchantUid,
                     targetType
             );
 
-            // saveMismatchLog를 서비스단에서 구현한 이유는?
-            // 주문서 누락시
             if (internalLogs.isEmpty()) {
-                saveMismatchLog(job, pgSale, null, MismatchType.PG_ONLY, "주문서 누락");
+                // 대표로 사용할 PG Raw 데이터 하나 찾기 (로그용)
+                PgSalesRaw samplePg = pgList.stream()
+                        .filter(p -> p.getMerchantUid().equals(merchantUid) && p.getPgStatus() == pgStatus)
+                        .findFirst().orElse(null);
+
+                saveMismatchLog(job, samplePg, null, 0L, MismatchType.PG_ONLY, "주문서 누락");
                 mismatchCount++;
                 continue;
             }
 
-            // stream을 이용에 한번에 변환
             long dbSum = internalLogs.stream().mapToLong(SalesLog::getPaymentAmount).sum();
 
-            // 결제 or 환불 관계없이 금액 일치/여부에따라 성공,실패 처리
-            if (pgSale.getPaymentAmount() == Math.abs(dbSum)) {
+            if (pgTotalAmount == Math.abs(dbSum)) {
                 internalLogs.forEach(SalesLog::matchReconciliation);
                 successCount++;
             } else {
                 internalLogs.forEach(SalesLog::mismatchReconciliation);
-                saveMismatchLog(job, pgSale, internalLogs.get(0), MismatchType.AMOUNT_DIFF, "금액 불일치");
+                PgSalesRaw samplePg = pgList.stream()
+                        .filter(p -> p.getMerchantUid().equals(merchantUid) && p.getPgStatus() == pgStatus)
+                        .findFirst().orElse(null);
+
+                // [수정 2 핵심] 첫 번째 항목의 금액이 아닌, 합산된 금액(dbSum)을 파라미터로 넘김
+                saveMismatchLog(job, samplePg, internalLogs.get(0), dbSum, MismatchType.AMOUNT_DIFF, "금액 불일치");
+                mismatchCount++;
             }
         }
-        // 3. 2번 과정을 거쳐도 혹시 모르게 남아있는 내부 데이터를 찾아내야함
-        // 내부 데이터 중, date & PENDING 인 것들을 찾아야함
+
         List<SalesLog> remainLogs = salesLogRepository.findAllBySnapshotAtBetweenAndReconciliationStatus(
                 startOfDay,
                 endOfDay,
                 ReconciliationStatus.PENDING
         );
 
-        // mismatch 처리
         for (SalesLog remainLog : remainLogs) {
             remainLog.mismatchReconciliation();
-            saveMismatchLog(job, null, remainLog, MismatchType.INTERNAL_ONLY, "PG 내역 없음");
+            saveMismatchLog(job, null, remainLog, remainLog.getPaymentAmount(), MismatchType.INTERNAL_ONLY, "PG 내역 없음");
             mismatchCount++;
         }
-        job.finish(pgList.size(), successCount, mismatchCount);
+
+        job.finish(processedKeys.size(), successCount, mismatchCount);
         log.info("=========[대사 종료] 성공: {}, 실패: {}", successCount, mismatchCount);
     }
 
@@ -110,13 +135,11 @@ public class RunReconciliationUseCase {
     }
 
     private void saveMismatchLog(ReconciliationJob job, PgSalesRaw pg, SalesLog internal,
-                                 MismatchType type, String reason) {
+                                 Long calculatedInternalAmount, MismatchType type, String reason) {
 
-        // 실패 시에 null일 수도 있으니까 npe 오류 대비
         String orderNo = (pg != null) ? pg.getMerchantUid() : internal.getOrderNo();
         String pgKey = (pg != null) ? pg.getPgKey() : null;
         Long pgAmount = (pg != null && pg.getPaymentAmount() != null) ? pg.getPaymentAmount() : 0L;
-        Long internalAmount = (internal != null && internal.getPaymentAmount() != null) ? internal.getPaymentAmount() : 0L;
 
         ReconciliationMismatchLog log = ReconciliationMismatchLog.builder()
                 .job(job)
@@ -124,7 +147,7 @@ public class RunReconciliationUseCase {
                 .pgKey(pgKey)
                 .type(type)
                 .pgAmount(pgAmount)
-                .internalAmount(internalAmount)
+                .internalAmount(calculatedInternalAmount) // 합산된 금액으로 저장
                 .reason(reason)
                 .build();
         mismatchLogRepository.save(log);
