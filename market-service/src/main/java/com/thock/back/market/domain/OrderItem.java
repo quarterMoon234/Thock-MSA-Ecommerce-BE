@@ -128,4 +128,15 @@ public class OrderItem extends BaseIdAndTime {
         this.state = OrderItemState.REFUNDED;
     }
 
+    /**
+     * 강제 구매 확정 (부분 환불 시 나머지 아이템용)
+     * 정상 진행 중인 상태(isActiveState)인 경우에만 강제 확정 가능
+     */
+    public void forceConfirm() {
+        if (!this.state.isActiveState()) {
+            throw new CustomException(ErrorCode.ORDER_INVALID_STATE);
+        }
+        this.state = OrderItemState.CONFIRMED;
+    }
+
 }

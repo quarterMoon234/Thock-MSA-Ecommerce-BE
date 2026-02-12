@@ -23,11 +23,11 @@ public class MarketCompleteOrderPaymentUseCase {
      * Payment 모듈로부터 결제 완료 알림을 받아 주문 상태를 업데이트
      * Payment 모듈이 이벤트를 발행하면 MarketEventListener가 이 메서드를 호출함
      * 결제가 완료되었음을 확인하면 주문 시 선택한 상품들 -> 장바구니 상품들을 장바구니에서 제거
-     * @param orderId 주문 ID
+     * @param orderNumber 주문번호(orderNumber)
      */
     @Transactional
-    public void completeOrderPayment(String orderId){
-        Order order = orderRepository.findByOrderNumber(orderId)
+    public void completeOrderPayment(String orderNumber){
+        Order order = orderRepository.findByOrderNumber(orderNumber)
                 .orElseThrow(() -> new CustomException(ErrorCode.ORDER_NOT_FOUND));
 
         // Order 도메인의 completePayment 호출
@@ -49,7 +49,7 @@ public class MarketCompleteOrderPaymentUseCase {
         }
 
         log.info("주문 결제 완료 및 장바구니 정리: orderId={}, orderNumber={}",
-                orderId, order.getOrderNumber());
+                order.getId(), orderNumber);
     }
 
 }

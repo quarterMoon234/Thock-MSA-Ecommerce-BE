@@ -114,19 +114,53 @@ class OrderTest {
         }
 
         @Test
-        @DisplayName("취소 불가능한 상태(SHIPPING)에서 취소 시 예외가 발생한다")
-        void cancelItems_shippingState_throwsException() throws Exception {
+        @DisplayName("취소 불가능한 상태(CONFIRMED)에서 취소 시 예외가 발생한다")
+        void cancelItems_confirmedState_throwsException() throws Exception {
             // given
             OrderItem item = addItemToOrder(order, 1L);
 
-            // 상태를 SHIPPING으로 변경 (Reflection 사용)
+            // 상태를 CONFIRMED로 변경 (Reflection 사용)
             Field stateField = OrderItem.class.getDeclaredField("state");
             stateField.setAccessible(true);
-            stateField.set(item, OrderItemState.SHIPPING);
+            stateField.set(item, OrderItemState.CONFIRMED);
 
             // when & then
             assertThatThrownBy(() -> order.cancelItems(List.of(1L), CancelReasonType.CHANGE_OF_MIND, null))
                     .isInstanceOf(CustomException.class);
+        }
+
+        @Test
+        @DisplayName("SHIPPING 상태에서 취소가 성공한다 (구매확정 전까지 취소 가능)")
+        void cancelItems_shippingState_success() throws Exception {
+            // given
+            OrderItem item = addItemToOrder(order, 1L);
+
+            Field stateField = OrderItem.class.getDeclaredField("state");
+            stateField.setAccessible(true);
+            stateField.set(item, OrderItemState.SHIPPING);
+
+            // when
+            order.cancelItems(List.of(1L), CancelReasonType.CHANGE_OF_MIND, null);
+
+            // then
+            assertThat(item.getState()).isEqualTo(OrderItemState.CANCELLED);
+        }
+
+        @Test
+        @DisplayName("DELIVERED 상태에서 취소가 성공한다 (구매확정 전까지 취소 가능)")
+        void cancelItems_deliveredState_success() throws Exception {
+            // given
+            OrderItem item = addItemToOrder(order, 1L);
+
+            Field stateField = OrderItem.class.getDeclaredField("state");
+            stateField.setAccessible(true);
+            stateField.set(item, OrderItemState.DELIVERED);
+
+            // when
+            order.cancelItems(List.of(1L), CancelReasonType.CHANGE_OF_MIND, null);
+
+            // then
+            assertThat(item.getState()).isEqualTo(OrderItemState.CANCELLED);
         }
     }
 
@@ -206,18 +240,70 @@ class OrderTest {
         }
 
         @Test
-        @DisplayName("취소 불가능한 상태(SHIPPING)에서 전체 취소 시 예외 발생")
-        void cancel_shippingState_throwsException() throws Exception {
+        @DisplayName("취소 불가능한 상태(CONFIRMED)에서 전체 취소 시 예외 발생")
+        void cancel_confirmedState_throwsException() throws Exception {
             // given
             addItemToOrder(order, 1L);
 
             Field stateField = Order.class.getDeclaredField("state");
             stateField.setAccessible(true);
-            stateField.set(order, OrderState.SHIPPING);
+            stateField.set(order, OrderState.CONFIRMED);
 
             // when & then
             assertThatThrownBy(() -> order.cancel(CancelReasonType.CHANGE_OF_MIND, null))
                     .isInstanceOf(CustomException.class);
+        }
+
+        @Test
+        @DisplayName("SHIPPING 상태에서 전체 취소 성공 (구매확정 전까지 취소 가능)")
+        void cancel_shippingState_success() throws Exception {
+            // given
+            OrderItem item = addItemToOrder(order, 1L);
+
+            Field orderStateField = Order.class.getDeclaredField("state");
+            orderStateField.setAccessible(true);
+            orderStateField.set(order, OrderState.SHIPPING);
+
+            Field itemStateField = OrderItem.class.getDeclaredField("state");
+            itemStateField.setAccessible(true);
+            itemStateField.set(item, OrderItemState.SHIPPING);
+
+            Field paymentDateField = Order.class.getDeclaredField("paymentDate");
+            paymentDateField.setAccessible(true);
+            paymentDateField.set(order, LocalDateTime.now());
+
+            // when
+            order.cancel(CancelReasonType.CHANGE_OF_MIND, null);
+
+            // then
+            assertThat(order.getState()).isEqualTo(OrderState.CANCELLED);
+            assertThat(item.getState()).isEqualTo(OrderItemState.CANCELLED);
+        }
+
+        @Test
+        @DisplayName("DELIVERED 상태에서 전체 취소 성공 (구매확정 전까지 취소 가능)")
+        void cancel_deliveredState_success() throws Exception {
+            // given
+            OrderItem item = addItemToOrder(order, 1L);
+
+            Field orderStateField = Order.class.getDeclaredField("state");
+            orderStateField.setAccessible(true);
+            orderStateField.set(order, OrderState.DELIVERED);
+
+            Field itemStateField = OrderItem.class.getDeclaredField("state");
+            itemStateField.setAccessible(true);
+            itemStateField.set(item, OrderItemState.DELIVERED);
+
+            Field paymentDateField = Order.class.getDeclaredField("paymentDate");
+            paymentDateField.setAccessible(true);
+            paymentDateField.set(order, LocalDateTime.now());
+
+            // when
+            order.cancel(CancelReasonType.CHANGE_OF_MIND, null);
+
+            // then
+            assertThat(order.getState()).isEqualTo(OrderState.CANCELLED);
+            assertThat(item.getState()).isEqualTo(OrderItemState.CANCELLED);
         }
 
         @Test
@@ -351,10 +437,10 @@ class OrderTest {
             OrderItem item1 = addItemToOrder(order, 1L);
             OrderItem item2 = addItemToOrder(order, 2L);
 
-            // item2를 SHIPPING 상태로 변경
+            // item2를 CONFIRMED 상태로 변경 (구매확정 후에는 취소 불가)
             Field stateField = OrderItem.class.getDeclaredField("state");
             stateField.setAccessible(true);
-            stateField.set(item2, OrderItemState.SHIPPING);
+            stateField.set(item2, OrderItemState.CONFIRMED);
 
             // when & then
             assertThatThrownBy(() -> order.cancelItems(List.of(1L, 2L), CancelReasonType.CHANGE_OF_MIND, null))
@@ -414,5 +500,340 @@ class OrderTest {
             assertThat(order.getTotalPrice()).isEqualTo(30000L);
             assertThat(order.getTotalSalePrice()).isEqualTo(27000L);
         }
+    }
+
+    @Nested
+    @DisplayName("completeRefund 환불 완료 테스트")
+    class CompleteRefundTest {
+
+        @Test
+        @DisplayName("전체 취소 후 환불 완료 시 주문 상태가 REFUNDED가 된다")
+        void completeRefund_allCancelled_becomesRefunded() throws Exception {
+            // given
+            OrderItem item1 = addItemToOrder(order, 1L);
+            OrderItem item2 = addItemToOrder(order, 2L);
+
+            // 결제 완료 상태로 변경
+            setOrderState(order, OrderState.PAYMENT_COMPLETED);
+            setOrderItemState(item1, OrderItemState.PAYMENT_COMPLETED);
+            setOrderItemState(item2, OrderItemState.PAYMENT_COMPLETED);
+
+            // 전체 취소
+            order.cancel(CancelReasonType.CHANGE_OF_MIND, null);
+            assertThat(order.getState()).isEqualTo(OrderState.CANCELLED);
+            assertThat(item1.getState()).isEqualTo(OrderItemState.CANCELLED);
+            assertThat(item2.getState()).isEqualTo(OrderItemState.CANCELLED);
+
+            // when - 환불 완료
+            order.completeRefund();
+
+            // then
+            assertThat(order.getState()).isEqualTo(OrderState.REFUNDED);
+            assertThat(item1.getState()).isEqualTo(OrderItemState.REFUNDED);
+            assertThat(item2.getState()).isEqualTo(OrderItemState.REFUNDED);
+        }
+
+        @Test
+        @DisplayName("부분 취소 후 환불 완료 시 주문 상태가 PARTIALLY_REFUNDED가 되고 나머지 아이템은 강제 확정된다")
+        void completeRefund_partiallyCancelled_becomesPartiallyRefunded() throws Exception {
+            // given
+            OrderItem item1 = addItemToOrder(order, 1L);
+            OrderItem item2 = addItemToOrder(order, 2L);
+
+            // 결제 완료 상태로 변경
+            setOrderState(order, OrderState.PAYMENT_COMPLETED);
+            setOrderItemState(item1, OrderItemState.PAYMENT_COMPLETED);
+            setOrderItemState(item2, OrderItemState.PAYMENT_COMPLETED);
+
+            // item1만 부분 취소
+            order.cancelItems(List.of(1L), CancelReasonType.CHANGE_OF_MIND, null);
+            assertThat(order.getState()).isEqualTo(OrderState.PARTIALLY_CANCELLED);
+            assertThat(item1.getState()).isEqualTo(OrderItemState.CANCELLED);
+            assertThat(item2.getState()).isEqualTo(OrderItemState.PAYMENT_COMPLETED);
+
+            // when - 환불 완료
+            order.completeRefund();
+
+            // then
+            assertThat(order.getState()).isEqualTo(OrderState.PARTIALLY_REFUNDED);
+            assertThat(item1.getState()).isEqualTo(OrderItemState.REFUNDED);
+            assertThat(item2.getState()).isEqualTo(OrderItemState.CONFIRMED); // 강제 확정
+        }
+
+        @Test
+        @DisplayName("부분 환불 시 SHIPPING 상태인 아이템도 강제 확정된다")
+        void completeRefund_shippingItem_forcedConfirm() throws Exception {
+            // given
+            OrderItem item1 = addItemToOrder(order, 1L);
+            OrderItem item2 = addItemToOrder(order, 2L);
+
+            // item1: 취소됨, item2: 배송중
+            setOrderState(order, OrderState.PARTIALLY_CANCELLED);
+            setOrderItemState(item1, OrderItemState.CANCELLED);
+            setOrderItemState(item2, OrderItemState.SHIPPING);
+
+            // when - 환불 완료
+            order.completeRefund();
+
+            // then
+            assertThat(order.getState()).isEqualTo(OrderState.PARTIALLY_REFUNDED);
+            assertThat(item1.getState()).isEqualTo(OrderItemState.REFUNDED);
+            assertThat(item2.getState()).isEqualTo(OrderItemState.CONFIRMED); // 강제 확정
+        }
+
+        @Test
+        @DisplayName("부분 환불 시 DELIVERED 상태인 아이템도 강제 확정된다")
+        void completeRefund_deliveredItem_forcedConfirm() throws Exception {
+            // given
+            OrderItem item1 = addItemToOrder(order, 1L);
+            OrderItem item2 = addItemToOrder(order, 2L);
+
+            // item1: 취소됨, item2: 배송완료
+            setOrderState(order, OrderState.PARTIALLY_CANCELLED);
+            setOrderItemState(item1, OrderItemState.CANCELLED);
+            setOrderItemState(item2, OrderItemState.DELIVERED);
+
+            // when - 환불 완료
+            order.completeRefund();
+
+            // then
+            assertThat(order.getState()).isEqualTo(OrderState.PARTIALLY_REFUNDED);
+            assertThat(item1.getState()).isEqualTo(OrderItemState.REFUNDED);
+            assertThat(item2.getState()).isEqualTo(OrderItemState.CONFIRMED); // 강제 확정
+        }
+
+        @Test
+        @DisplayName("이미 환불된 주문에 대해 환불 완료 요청 시 무시된다 (멱등성)")
+        void completeRefund_alreadyRefunded_ignored() throws Exception {
+            // given
+            addItemToOrder(order, 1L);
+            setOrderState(order, OrderState.REFUNDED);
+
+            // when & then - 예외 없이 무시됨
+            order.completeRefund();
+            assertThat(order.getState()).isEqualTo(OrderState.REFUNDED);
+        }
+
+        @Test
+        @DisplayName("이미 부분 환불된 주문에 대해 환불 완료 요청 시 무시된다 (멱등성)")
+        void completeRefund_alreadyPartiallyRefunded_ignored() throws Exception {
+            // given
+            addItemToOrder(order, 1L);
+            setOrderState(order, OrderState.PARTIALLY_REFUNDED);
+
+            // when & then - 예외 없이 무시됨
+            order.completeRefund();
+            assertThat(order.getState()).isEqualTo(OrderState.PARTIALLY_REFUNDED);
+        }
+
+        @Test
+        @DisplayName("환불 불가능한 상태에서 환불 완료 요청 시 예외 발생")
+        void completeRefund_notCancelled_throwsException() throws Exception {
+            // given
+            addItemToOrder(order, 1L);
+            setOrderState(order, OrderState.PAYMENT_COMPLETED);
+
+            // when & then
+            assertThatThrownBy(() -> order.completeRefund())
+                    .isInstanceOf(CustomException.class);
+        }
+
+        @Test
+        @DisplayName("부분 취소 후 남은 아이템이 이미 CONFIRMED인 경우 PARTIALLY_REFUNDED가 된다")
+        void completeRefund_remainingItemAlreadyConfirmed_becomesPartiallyRefunded() throws Exception {
+            // given
+            OrderItem item1 = addItemToOrder(order, 1L);
+            OrderItem item2 = addItemToOrder(order, 2L);
+
+            // item1: 취소됨, item2: 이미 구매확정
+            setOrderState(order, OrderState.PARTIALLY_CANCELLED);
+            setOrderItemState(item1, OrderItemState.CANCELLED);
+            setOrderItemState(item2, OrderItemState.CONFIRMED);
+
+            // when - 환불 완료
+            order.completeRefund();
+
+            // then
+            assertThat(order.getState()).isEqualTo(OrderState.PARTIALLY_REFUNDED);
+            assertThat(item1.getState()).isEqualTo(OrderItemState.REFUNDED);
+            assertThat(item2.getState()).isEqualTo(OrderItemState.CONFIRMED); // 그대로 유지
+        }
+
+        @Test
+        @DisplayName("부분 취소 + 일부 CONFIRMED + 일부 ACTIVE인 경우 ACTIVE만 강제 확정된다")
+        void completeRefund_mixedStates_onlyActiveForcedConfirm() throws Exception {
+            // given
+            OrderItem item1 = addItemToOrder(order, 1L);
+            OrderItem item2 = addItemToOrder(order, 2L);
+            OrderItem item3 = addItemToOrder(order, 3L);
+
+            // item1: 취소됨, item2: 이미 구매확정, item3: 배송중
+            setOrderState(order, OrderState.PARTIALLY_CANCELLED);
+            setOrderItemState(item1, OrderItemState.CANCELLED);
+            setOrderItemState(item2, OrderItemState.CONFIRMED);
+            setOrderItemState(item3, OrderItemState.SHIPPING);
+
+            // when - 환불 완료
+            order.completeRefund();
+
+            // then
+            assertThat(order.getState()).isEqualTo(OrderState.PARTIALLY_REFUNDED);
+            assertThat(item1.getState()).isEqualTo(OrderItemState.REFUNDED);
+            assertThat(item2.getState()).isEqualTo(OrderItemState.CONFIRMED); // 그대로
+            assertThat(item3.getState()).isEqualTo(OrderItemState.CONFIRMED); // 강제 확정
+        }
+    }
+
+    @Nested
+    @DisplayName("OrderItem forceConfirm 강제 확정 테스트")
+    class ForceConfirmTest {
+
+        @Test
+        @DisplayName("PAYMENT_COMPLETED 상태에서 강제 확정 성공")
+        void forceConfirm_paymentCompleted_success() throws Exception {
+            // given
+            OrderItem item = addItemToOrder(order, 1L);
+            setOrderItemState(item, OrderItemState.PAYMENT_COMPLETED);
+
+            // when
+            item.forceConfirm();
+
+            // then
+            assertThat(item.getState()).isEqualTo(OrderItemState.CONFIRMED);
+        }
+
+        @Test
+        @DisplayName("PREPARING 상태에서 강제 확정 성공")
+        void forceConfirm_preparing_success() throws Exception {
+            // given
+            OrderItem item = addItemToOrder(order, 1L);
+            setOrderItemState(item, OrderItemState.PREPARING);
+
+            // when
+            item.forceConfirm();
+
+            // then
+            assertThat(item.getState()).isEqualTo(OrderItemState.CONFIRMED);
+        }
+
+        @Test
+        @DisplayName("SHIPPING 상태에서 강제 확정 성공")
+        void forceConfirm_shipping_success() throws Exception {
+            // given
+            OrderItem item = addItemToOrder(order, 1L);
+            setOrderItemState(item, OrderItemState.SHIPPING);
+
+            // when
+            item.forceConfirm();
+
+            // then
+            assertThat(item.getState()).isEqualTo(OrderItemState.CONFIRMED);
+        }
+
+        @Test
+        @DisplayName("DELIVERED 상태에서 강제 확정 성공")
+        void forceConfirm_delivered_success() throws Exception {
+            // given
+            OrderItem item = addItemToOrder(order, 1L);
+            setOrderItemState(item, OrderItemState.DELIVERED);
+
+            // when
+            item.forceConfirm();
+
+            // then
+            assertThat(item.getState()).isEqualTo(OrderItemState.CONFIRMED);
+        }
+
+        @Test
+        @DisplayName("이미 CONFIRMED 상태에서 강제 확정 시 예외 발생")
+        void forceConfirm_alreadyConfirmed_throwsException() throws Exception {
+            // given
+            OrderItem item = addItemToOrder(order, 1L);
+            setOrderItemState(item, OrderItemState.CONFIRMED);
+
+            // when & then
+            assertThatThrownBy(() -> item.forceConfirm())
+                    .isInstanceOf(CustomException.class);
+        }
+
+        @Test
+        @DisplayName("CANCELLED 상태에서 강제 확정 시 예외 발생")
+        void forceConfirm_cancelled_throwsException() throws Exception {
+            // given
+            OrderItem item = addItemToOrder(order, 1L);
+            setOrderItemState(item, OrderItemState.CANCELLED);
+
+            // when & then
+            assertThatThrownBy(() -> item.forceConfirm())
+                    .isInstanceOf(CustomException.class);
+        }
+    }
+
+    @Nested
+    @DisplayName("completePayment 결제 완료 테스트")
+    class CompletePaymentTest {
+
+        @Test
+        @DisplayName("결제 완료 시 주문 상태가 PAYMENT_COMPLETED가 된다")
+        void completePayment_success() throws Exception {
+            // given
+            OrderItem item1 = addItemToOrder(order, 1L);
+            OrderItem item2 = addItemToOrder(order, 2L);
+            assertThat(order.getState()).isEqualTo(OrderState.PENDING_PAYMENT);
+
+            // when
+            order.completePayment();
+
+            // then
+            assertThat(order.getState()).isEqualTo(OrderState.PAYMENT_COMPLETED);
+            assertThat(item1.getState()).isEqualTo(OrderItemState.PAYMENT_COMPLETED);
+            assertThat(item2.getState()).isEqualTo(OrderItemState.PAYMENT_COMPLETED);
+        }
+
+        @Test
+        @DisplayName("이미 결제 완료된 주문에 대해 결제 완료 요청 시 무시된다 (멱등성)")
+        void completePayment_alreadyCompleted_ignored() throws Exception {
+            // given
+            addItemToOrder(order, 1L);
+            setOrderState(order, OrderState.PAYMENT_COMPLETED);
+
+            // when & then - 예외 없이 무시됨
+            order.completePayment();
+            assertThat(order.getState()).isEqualTo(OrderState.PAYMENT_COMPLETED);
+        }
+
+        @Test
+        @DisplayName("결제 대기 상태가 아닌 주문에 대해 결제 완료 요청 시 예외 발생")
+        void completePayment_notPending_throwsException() throws Exception {
+            // given
+            addItemToOrder(order, 1L);
+            setOrderState(order, OrderState.CANCELLED);
+
+            // when & then
+            assertThatThrownBy(() -> order.completePayment())
+                    .isInstanceOf(CustomException.class);
+        }
+    }
+
+    // 헬퍼 메서드: Order 상태 설정
+    private void setOrderState(Order order, OrderState state) throws Exception {
+        Field stateField = Order.class.getDeclaredField("state");
+        stateField.setAccessible(true);
+        stateField.set(order, state);
+
+        if (state == OrderState.PAYMENT_COMPLETED || state == OrderState.CANCELLED ||
+                state == OrderState.PARTIALLY_CANCELLED || state == OrderState.REFUNDED ||
+                state == OrderState.PARTIALLY_REFUNDED) {
+            Field paymentDateField = Order.class.getDeclaredField("paymentDate");
+            paymentDateField.setAccessible(true);
+            paymentDateField.set(order, LocalDateTime.now());
+        }
+    }
+
+    // 헬퍼 메서드: OrderItem 상태 설정
+    private void setOrderItemState(OrderItem item, OrderItemState state) throws Exception {
+        Field stateField = OrderItem.class.getDeclaredField("state");
+        stateField.setAccessible(true);
+        stateField.set(item, state);
     }
 }

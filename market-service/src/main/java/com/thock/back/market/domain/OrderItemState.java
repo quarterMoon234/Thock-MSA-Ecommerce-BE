@@ -27,14 +27,14 @@ public enum OrderItemState {
 
     /**
      * 주문 취소 가능한 상태인지 확인
-     * 결제 대기
-     * 결제 완료
-     * 상품 준비중
+     * 구매 확정 전까지 취소 가능 (배송 후에도 7일 이내 취소 가능)
      */
     public boolean isCancellable() {
         return this == PENDING_PAYMENT ||
                 this == PAYMENT_COMPLETED ||
-                this == PREPARING;
+                this == PREPARING ||
+                this == SHIPPING ||
+                this == DELIVERED;
     }
 
     /**
@@ -45,6 +45,7 @@ public enum OrderItemState {
     }
 
     /**
+     * 주문을 취소하고 나서의 상태
      * 환불 완료로 변경 가능한 상태 (배송 전 / 배송 후)
      */
     public boolean canCompleteRefund(){
@@ -55,7 +56,18 @@ public enum OrderItemState {
      * 배송 후 환불 요청 가능한 상태인지 확인
      */
     public boolean isRefundable() {
-        return this == DELIVERED ||
-                this == CONFIRMED;
+        return this == DELIVERED;
     }
+
+    /**
+     * 정상 진행 중인 상태 (취소/환불/구매확정 아님)
+     * 부분 환불 시 나머지 아이템 강제 구매확정 대상 판별용
+     */
+    public boolean isActiveState() {
+        return  this == PAYMENT_COMPLETED || // 결제 완료
+                this == PREPARING || // 배송 준비중
+                this == SHIPPING || // 배송중
+                this == DELIVERED; // 배송 완료
+    }
+
 }

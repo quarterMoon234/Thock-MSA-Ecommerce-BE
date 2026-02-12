@@ -21,9 +21,12 @@ public class MarketFacade {
 
     private final MarketSyncMemberUseCase marketSyncMemberUseCase;
     private final MarketCreateCartUseCase marketCreateCartUseCase;
-    private final MarketCreateOrderUseCase marketCreateOrderUseCase;
-    private final MarketCompleteOrderPaymentUseCase marketCompleteOrderPaymentUseCase;
-    private final MarketCancelOrderPaymentUseCase marketCancelOrderPaymentUseCase;
+    // 상태 변경 시나리오
+    private final MarketCreateOrderUseCase marketCreateOrderUseCase; // 주문 생성
+    private final MarketCompleteOrderPaymentUseCase marketCompleteOrderPaymentUseCase; // 결제 완료
+    private final MarketCancelOrderPaymentUseCase marketCancelOrderPaymentUseCase; // 주문 취소
+    private final MarketCompleteRefundUseCase marketCompleteRefundUseCase; // 환불
+    // 조회 전용
     private final CartService cartService;
     private final OrderService orderService;
 
@@ -53,8 +56,8 @@ public class MarketFacade {
     }
 
     @Transactional
-    public void completeOrderPayment(String orderId){
-        marketCompleteOrderPaymentUseCase.completeOrderPayment(orderId);
+    public void completeOrderPayment(String orderNumber){
+        marketCompleteOrderPaymentUseCase.completeOrderPayment(orderNumber);
     }
 
     @Transactional
@@ -88,4 +91,8 @@ public class MarketFacade {
         return orderService.getOrderDetail(memberId, orderId);
     }
 
+    @Transactional
+    public void completeRefund(String orderNumber) {
+        marketCompleteRefundUseCase.completeRefund(orderNumber);
+    }
 }

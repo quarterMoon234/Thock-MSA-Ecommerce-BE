@@ -139,6 +139,13 @@ public class Order extends BaseIdAndTime {
      * 결제 완료 처리 (Payment 모듈이 호출)
      */
     public void completePayment() {
+        // 이미 결제 완료면 조용히 무시 (멱등성 보장)
+        if (this.state == OrderState.PAYMENT_COMPLETED) {
+            log.info("이미 결제 완료된 주문 (중복 이벤트 무시): orderNumber={}", orderNumber);
+            return;
+        }
+
+
         if (this.state != OrderState.PENDING_PAYMENT) {
             throw new CustomException(ErrorCode.ORDER_INVALID_STATE);
         }
@@ -194,9 +201,6 @@ public class Order extends BaseIdAndTime {
         }
 
         OrderState previousState = this.state;
-        // 배송 전까지는 즉시 환불 가능
-        boolean needsRefund = previousState == OrderState.PAYMENT_COMPLETED ||
-                previousState == OrderState.PREPARING;
 
         // 모든 OrderItem 취소
         this.items.forEach(item -> item.cancel(cancelReasonType, cancelReasonDetail));
@@ -207,7 +211,8 @@ public class Order extends BaseIdAndTime {
         log.info("🚫 주문 전체 취소: orderId={}, orderNumber={}, previousState={}, reason={}",
                 getId(), orderNumber, previousState, cancelReasonType);
 
-        if (needsRefund) {
+        // 결제 완료된 주문만 환불 필요 (PENDING_PAYMENT 제외)
+        if (isPaid()) {
             log.info("💸 환불 필요: orderId={}, refundAmount={}", getId(), totalSalePrice);
 
             String cancelReason = cancelReasonType == CancelReasonType.ETC && cancelReasonDetail != null
@@ -217,7 +222,7 @@ public class Order extends BaseIdAndTime {
             PaymentCancelRequestDto cancelDto = new PaymentCancelRequestDto(
                     this.orderNumber,
                     String.format("주문 전체 취소 (사유: %s)", cancelReason),
-                    null  // 전액 환불
+                    this.totalSalePrice  // 전액 환불
             );
             publishEvent(new MarketOrderPaymentRequestCanceledEvent(cancelDto));
         }
@@ -243,8 +248,8 @@ public class Order extends BaseIdAndTime {
             }
         });
 
-        // 3. 총 환불 금액 계산
-        Long totalRefundAmount = orderItems.stream()
+        // 3. 부분 환불 금액 계산
+        Long refundAmount = orderItems.stream()
                 .mapToLong(OrderItem::getTotalSalePrice)
                 .sum();
 
@@ -265,31 +270,53 @@ public class Order extends BaseIdAndTime {
             PaymentCancelRequestDto cancelDto = new PaymentCancelRequestDto(
                     this.orderNumber,
                     String.format("주문 상품 부분 취소 (%d개, 사유: %s)", orderItems.size(), cancelReason),
-                    totalRefundAmount
+                    refundAmount
             );
             publishEvent(new MarketOrderPaymentRequestCanceledEvent(cancelDto));
 
-            log.info("💸 부분 환불 요청: orderId={}, refundAmount={}", getId(), totalRefundAmount);
+            log.info("💸 부분 환불 요청: orderId={}, refundAmount={}", getId(), refundAmount);
         }
     }
 
     /**
      * 환불 완료 처리 (Payment 모듈에서 환불 완료 이벤트 수신 시)
+     * 부분 환불 시 나머지 아이템들은 강제 구매확정 처리
+     * 이후 추가 취소/환불은 CS 처리로 진행
+     * TODO: 환불 주문 건 정산으로 넘기기, 각 orderItem에 대해서 수량 별 취소까지 가능
      */
     public void completeRefund(){
-        // 취소 또는 부분취소 상태에서만 환불 완료 가능
-        if (this.state != OrderState.CANCELLED && this.state != OrderState.PARTIALLY_CANCELLED) {
+        // 이미 부분, 전체 환불이면 무시 (멱등성)
+        if (this.state == OrderState.PARTIALLY_REFUNDED || this.state == OrderState.REFUNDED) {
+            log.info("이미 환불 완료된 주문 (중복 이벤트 무시): orderNumber={}", orderNumber);
+            return;
+        }
+
+        // 주문 취소 이후 상태 : 환불 가능한 상태 체크
+        if (!this.state.canCompleteRefund()) {
             throw new CustomException(ErrorCode.ORDER_CANNOT_REFUND);
         }
 
-        // 취소된 OrderItem들만 환불 완료로 변경
+        // 1. 취소된 아이템들을 환불 완료로 변경
         this.items.stream()
                 .filter(item -> item.getState().canCompleteRefund())
                 .forEach(OrderItem::completeRefund);
 
-        this.state = OrderState.REFUNDED;
+        // 2. 활성 상태 아이템들을 강제 구매확정 처리
+        this.items.stream()
+                .filter(item -> item.getState().isActiveState())
+                .forEach(OrderItem::forceConfirm);
 
-        log.info(" 환불 완료: orderId={}, orderNumber={}", getId(), getOrderNumber());
+        // 3. 상태 결정: 모든 아이템이 REFUNDED인지 확인
+        boolean allRefunded = this.items.stream()
+                .allMatch(item -> item.getState() == OrderItemState.REFUNDED);
+
+        if (allRefunded) {
+            this.state = OrderState.REFUNDED;
+            log.info("💰 전체 환불 완료: orderId={}, orderNumber={}", getId(), getOrderNumber());
+        } else {
+            this.state = OrderState.PARTIALLY_REFUNDED;
+            log.info("💰 부분 환불 완료: orderId={}, orderNumber={}", getId(), getOrderNumber());
+        }
     }
 
     /**

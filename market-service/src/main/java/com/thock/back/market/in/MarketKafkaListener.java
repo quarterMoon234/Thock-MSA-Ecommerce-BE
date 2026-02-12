@@ -39,19 +39,18 @@ public class MarketKafkaListener {
     @KafkaListener(topics = KafkaTopics.MARKET_ORDER_PAYMENT_COMPLETED, groupId = "market-service")
     @Transactional
     public void handle(PaymentCompletedEvent event){
-        String orderId = event.payment().orderId();
-        log.info("Received MemberModifiedEvent via Kafka: orderId={}", orderId);
-        marketFacade.completeOrderPayment(orderId);
+        String orderNumber = event.payment().orderId();
+        log.info("Received PaymentCompletedEvent via Kafka: orderNumber={}", orderNumber);
+        marketFacade.completeOrderPayment(orderNumber);
     }
 
-    // TODO
     @KafkaListener(topics = KafkaTopics.PAYMENT_REFUND_COMPLETED, groupId = "market-service")
     @Transactional
     public void handle(PaymentRefundCompletedEvent event){
         Long memberId = event.dto().memberId();
-        String orderId = event.dto().orderId();
-        log.info("Received PaymentRefundCompletedEvent via Kafka: memberId = {}, orderId={}", memberId, orderId);
-//        marketFacade.completeRefund(orderId);
+        String orderNumber = event.dto().orderId();
+        log.info("Received PaymentRefundCompletedEvent via Kafka: memberId = {}, orderNumber={}", memberId, orderNumber);
+        marketFacade.completeRefund(orderNumber);
     }
 
 
