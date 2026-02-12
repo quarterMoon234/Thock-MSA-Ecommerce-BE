@@ -201,9 +201,6 @@ public class Order extends BaseIdAndTime {
         }
 
         OrderState previousState = this.state;
-        // 배송 전까지는 즉시 환불 가능
-        boolean needsRefund = previousState == OrderState.PAYMENT_COMPLETED ||
-                previousState == OrderState.PREPARING;
 
         // 모든 OrderItem 취소
         this.items.forEach(item -> item.cancel(cancelReasonType, cancelReasonDetail));
@@ -214,7 +211,8 @@ public class Order extends BaseIdAndTime {
         log.info("🚫 주문 전체 취소: orderId={}, orderNumber={}, previousState={}, reason={}",
                 getId(), orderNumber, previousState, cancelReasonType);
 
-        if (needsRefund) {
+        // 결제 완료된 주문만 환불 필요 (PENDING_PAYMENT 제외)
+        if (isPaid()) {
             log.info("💸 환불 필요: orderId={}, refundAmount={}", getId(), totalSalePrice);
 
             String cancelReason = cancelReasonType == CancelReasonType.ETC && cancelReasonDetail != null
@@ -294,32 +292,30 @@ public class Order extends BaseIdAndTime {
         }
 
         // 주문 취소 이후 상태 : 환불 가능한 상태 체크
-        if (!this.state.canCompleteRefund())
-        {
+        if (!this.state.canCompleteRefund()) {
             throw new CustomException(ErrorCode.ORDER_CANNOT_REFUND);
         }
 
-        // 취소된 아이템들을 환불 완료로 변경
+        // 1. 취소된 아이템들을 환불 완료로 변경
         this.items.stream()
                 .filter(item -> item.getState().canCompleteRefund())
                 .forEach(OrderItem::completeRefund);
 
-        // 상태 결정: 전체 환불 vs 부분 환불
-        boolean hasActiveItems = this.items.stream()
-                        .anyMatch(item -> item.getState().isActiveState());
+        // 2. 활성 상태 아이템들을 강제 구매확정 처리
+        this.items.stream()
+                .filter(item -> item.getState().isActiveState())
+                .forEach(OrderItem::forceConfirm);
 
-        if (hasActiveItems) {
-            // 부분 환불: 나머지 active 아이템들을 강제 구매확정 처리
-            this.items.stream()
-                    .filter(item -> item.getState().isActiveState())
-                    .forEach(OrderItem::forceConfirm);
+        // 3. 상태 결정: 모든 아이템이 REFUNDED인지 확인
+        boolean allRefunded = this.items.stream()
+                .allMatch(item -> item.getState() == OrderItemState.REFUNDED);
 
-            this.state = OrderState.PARTIALLY_REFUNDED;
-            log.info("💰 부분 환불 완료 (나머지 아이템 강제 구매확정): orderId={}, orderNumber={}", getId(), getOrderNumber());
-        } else {
-            // 전체 환불
+        if (allRefunded) {
             this.state = OrderState.REFUNDED;
             log.info("💰 전체 환불 완료: orderId={}, orderNumber={}", getId(), getOrderNumber());
+        } else {
+            this.state = OrderState.PARTIALLY_REFUNDED;
+            log.info("💰 부분 환불 완료: orderId={}, orderNumber={}", getId(), getOrderNumber());
         }
     }
 

@@ -23,7 +23,7 @@ public class MarketCompleteOrderPaymentUseCase {
      * Payment 모듈로부터 결제 완료 알림을 받아 주문 상태를 업데이트
      * Payment 모듈이 이벤트를 발행하면 MarketEventListener가 이 메서드를 호출함
      * 결제가 완료되었음을 확인하면 주문 시 선택한 상품들 -> 장바구니 상품들을 장바구니에서 제거
-     * @param orderNumber 주문 UUID
+     * @param orderNumber 주문번호(orderNumber)
      */
     @Transactional
     public void completeOrderPayment(String orderNumber){

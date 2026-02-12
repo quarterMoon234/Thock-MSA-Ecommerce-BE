@@ -39,8 +39,8 @@ public class MarketKafkaListener {
     @KafkaListener(topics = KafkaTopics.MARKET_ORDER_PAYMENT_COMPLETED, groupId = "market-service")
     @Transactional
     public void handle(PaymentCompletedEvent event){
-            String orderNumber = event.payment().orderId();
-        log.info("Received MemberModifiedEvent via Kafka: orderNumber={}", orderNumber);
+        String orderNumber = event.payment().orderId();
+        log.info("Received PaymentCompletedEvent via Kafka: orderNumber={}", orderNumber);
         marketFacade.completeOrderPayment(orderNumber);
     }
 

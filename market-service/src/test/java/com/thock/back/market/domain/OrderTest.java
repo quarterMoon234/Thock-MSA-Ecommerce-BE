@@ -637,6 +637,51 @@ class OrderTest {
             assertThatThrownBy(() -> order.completeRefund())
                     .isInstanceOf(CustomException.class);
         }
+
+        @Test
+        @DisplayName("부분 취소 후 남은 아이템이 이미 CONFIRMED인 경우 PARTIALLY_REFUNDED가 된다")
+        void completeRefund_remainingItemAlreadyConfirmed_becomesPartiallyRefunded() throws Exception {
+            // given
+            OrderItem item1 = addItemToOrder(order, 1L);
+            OrderItem item2 = addItemToOrder(order, 2L);
+
+            // item1: 취소됨, item2: 이미 구매확정
+            setOrderState(order, OrderState.PARTIALLY_CANCELLED);
+            setOrderItemState(item1, OrderItemState.CANCELLED);
+            setOrderItemState(item2, OrderItemState.CONFIRMED);
+
+            // when - 환불 완료
+            order.completeRefund();
+
+            // then
+            assertThat(order.getState()).isEqualTo(OrderState.PARTIALLY_REFUNDED);
+            assertThat(item1.getState()).isEqualTo(OrderItemState.REFUNDED);
+            assertThat(item2.getState()).isEqualTo(OrderItemState.CONFIRMED); // 그대로 유지
+        }
+
+        @Test
+        @DisplayName("부분 취소 + 일부 CONFIRMED + 일부 ACTIVE인 경우 ACTIVE만 강제 확정된다")
+        void completeRefund_mixedStates_onlyActiveForcedConfirm() throws Exception {
+            // given
+            OrderItem item1 = addItemToOrder(order, 1L);
+            OrderItem item2 = addItemToOrder(order, 2L);
+            OrderItem item3 = addItemToOrder(order, 3L);
+
+            // item1: 취소됨, item2: 이미 구매확정, item3: 배송중
+            setOrderState(order, OrderState.PARTIALLY_CANCELLED);
+            setOrderItemState(item1, OrderItemState.CANCELLED);
+            setOrderItemState(item2, OrderItemState.CONFIRMED);
+            setOrderItemState(item3, OrderItemState.SHIPPING);
+
+            // when - 환불 완료
+            order.completeRefund();
+
+            // then
+            assertThat(order.getState()).isEqualTo(OrderState.PARTIALLY_REFUNDED);
+            assertThat(item1.getState()).isEqualTo(OrderItemState.REFUNDED);
+            assertThat(item2.getState()).isEqualTo(OrderItemState.CONFIRMED); // 그대로
+            assertThat(item3.getState()).isEqualTo(OrderItemState.CONFIRMED); // 강제 확정
+        }
     }
 
     @Nested
