@@ -93,6 +93,7 @@ public class KafkaConfig {
         configProps.put(ErrorHandlingDeserializer.VALUE_DESERIALIZER_CLASS, JsonDeserializer.class);
 
         // 보안 : 신뢰할 패키지만 지정
+        // 역직렬화(JSON -> Java) 시 인증된 패키지에서만 클래스 생성 가능하도록 함
         configProps.put(JsonDeserializer.TRUSTED_PACKAGES, "com.thock.back.shared.*");
         configProps.put(JsonDeserializer.USE_TYPE_INFO_HEADERS, true);
 
