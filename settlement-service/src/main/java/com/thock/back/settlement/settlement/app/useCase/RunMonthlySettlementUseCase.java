@@ -23,8 +23,6 @@ public class RunMonthlySettlementUseCase {
 
     private final DailySettlementRepository dailySettlementRepository;
     private final MonthlySettlementRepository monthlySettlementRepository;
-
-
     // TODO : 현재 일별 정산 데이터(1일~31일)까지 모두 긁어 오기 때문에, 데이터가 많으면 메모리가 부족할 수 있음
     // TODO : 따라서 판매자 목록을 조회 후, 루프를 도는 것이 안전
     // TODO : 대용량 처리를 위해 페이징 처리(offest, cursor) 고도화 예정

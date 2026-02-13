@@ -8,7 +8,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name = "finance_settlement_account")
+@Table(name = "settlement_account")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class SettlementAccount extends BaseTimeEntity {

@@ -13,7 +13,7 @@ import java.util.List;
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@Table(name = "finance_settlement_daily_settlement_item")
+@Table(name = "daily_settlement_item")
 public class DailySettlementItem {
 
     @Id

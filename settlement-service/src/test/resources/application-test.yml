@@ -6,12 +6,10 @@ spring:
     name: settlement_service
 
   datasource:
-    # 1. 포트를 현재 띄워둔 DB에 맞춤 (개별 도커면 3306, 전체 도커면 3307)
-    # 2. DB 이름을 실제 존재하는 settlement_db로 변경하거나, DB에 test_db를 생성해줘야 함
-    url: jdbc:mysql://localhost:3306/settlement_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul&characterEncoding=UTF-8
-    username: root
-    password: root
-    driver-class-name: com.mysql.cj.jdbc.Driver  # <--- 이 줄을 추가하세요!
+    url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3310}/${MYSQL_DATABASE:settlement_db}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+    username: ${MYSQL_USER:root}
+    password: ${MYSQL_PASSWORD:root}
+    driver-class-name: com.mysql.cj.jdbc.Driver
 
   jpa:
     hibernate:
@@ -22,7 +20,7 @@ spring:
         dialect: org.hibernate.dialect.MySQLDialect
 
 jwt:
-  secret: ${JWT_SECRET_KEY:}
+  secret: "thock-2026-backend-authentication-jwt-secret-key-very-very-long-256bit"
   access-token-exp-seconds: 1800
   refresh-token-exp-seconds: 1209600
   issuer: "thock"

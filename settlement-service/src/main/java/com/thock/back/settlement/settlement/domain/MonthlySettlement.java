@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@Table(name = "finance_settlement_monthly")
+@Table(name = "monthly_settlement")
 @EntityListeners(AuditingEntityListener.class) // ★ created_at 자동 주입
 public class MonthlySettlement {
 
