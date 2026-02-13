@@ -408,6 +408,19 @@ public class PaymentConfirmAndRefundUseCase {
                     return new CustomException(ErrorCode.PAYMENT_UNKNOWN_ORDER_NUMBER);
                 });
 
+        PaymentStatus currentStatus = payment.getPaymentStatus();
+
+        // 이미 취소된 경우: 멱등 처리 (no-op)
+        if (currentStatus == PaymentStatus.CANCELED) {
+            log.info("이미 취소된 결제 - orderId={}", orderId);
+            return;
+        }
+
+        // '결제 전 취소'는 REQUESTED (및 필요 시 PG_PENDING) 상태에서만 허용
+        if (currentStatus != PaymentStatus.REQUESTED && currentStatus != PaymentStatus.PG_PENDING) {
+            log.warn("결제 전 취소 불가한 상태 - orderId={}, status={}", orderId, currentStatus);
+            throw new CustomException(ErrorCode.PAYMENT_NOT_REQUEST);
+        }
         payment.updatePaymentStatus(PaymentStatus.CANCELED);
         paymentRepository.save(payment);
         payment.createPaymentLogEvent();
