@@ -7,6 +7,7 @@ import com.thock.back.shared.market.event.MarketOrderPaymentRequestCanceledEvent
 import com.thock.back.shared.market.event.MarketOrderPaymentRequestedEvent;
 import com.thock.back.shared.member.event.MemberJoinedEvent;
 import com.thock.back.shared.member.event.MemberModifiedEvent;
+import com.thock.back.shared.payment.event.PaymentCompletedEvent;
 import com.thock.back.shared.payment.event.PaymentRefundCompletedEvent;
 import com.thock.back.shared.settlement.event.SettlementCompletedEvent;
 import lombok.RequiredArgsConstructor;
