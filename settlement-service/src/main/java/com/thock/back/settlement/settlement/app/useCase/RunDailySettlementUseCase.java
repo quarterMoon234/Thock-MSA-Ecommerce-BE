@@ -23,6 +23,8 @@ import java.util.stream.Collectors;
 2. 해당 정산 후보군들은 이벤트 소싱이 적용돼있기 때문에 판매자별로 그루핑을 시켜줘야한다.
 3. 판매자 별로 정산서(일별정산), 상세내역(일별 판매내역)을 생성해 줘야한다.
 3-1. 부모 정산서를 만든다.
+
+ */
 @Service
 @RequiredArgsConstructor
 @Slf4j
