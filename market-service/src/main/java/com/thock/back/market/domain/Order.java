@@ -5,9 +5,11 @@ import com.thock.back.global.exception.ErrorCode;
 import com.thock.back.global.jpa.entity.BaseIdAndTime;
 import com.thock.back.shared.market.domain.CancelReasonType;
 import com.thock.back.shared.market.dto.OrderDto;
+import com.thock.back.shared.market.event.MarketOrderBeforePaymentCanceledEvent;
 import com.thock.back.shared.market.event.MarketOrderPaymentCompletedEvent;
 import com.thock.back.shared.market.event.MarketOrderPaymentRequestCanceledEvent;
 import com.thock.back.shared.market.event.MarketOrderPaymentRequestedEvent;
+import com.thock.back.shared.payment.dto.BeforePaymentCancelRequestDto;
 import com.thock.back.shared.payment.dto.PaymentCancelRequestDto;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -162,7 +164,7 @@ public class Order extends BaseIdAndTime {
 
     /**
      * 주문 전체 취소 1. 결제 요청 중 취소
-     * PG 결제창 띄워놓고 사용자가 취소하거나 결제 안 하고 나간 경우
+     * PG 결제창 띄워놓고 사용자가 취소(명시적 취소)하거나 결제 안 하고(타임 아웃) 나간 경우
      */
     public void cancelRequestPayment(CancelReasonType cancelReasonType, String cancelReasonDetail) {
         if (!isPaymentInProgress()) {
@@ -172,28 +174,18 @@ public class Order extends BaseIdAndTime {
         // 모든 OrderItem 취소
         this.items.forEach(item -> item.cancel(cancelReasonType, cancelReasonDetail));
 
-        this.requestPaymentDate = null;
         this.state = OrderState.CANCELLED;
         this.cancelDate = LocalDateTime.now();
 
         log.info("❌ 결제 요청 취소: orderId={}, orderNumber={}, reason={}", getId(), orderNumber, cancelReasonType);
 
-        // Payment 모듈에 취소 알림 (환불 불필요)
-        String cancelReason = cancelReasonType == CancelReasonType.ETC && cancelReasonDetail != null
-                ? String.format("%s: %s", cancelReasonType.getDescription(), cancelReasonDetail)
-                : cancelReasonType.getDescription();
-
-        PaymentCancelRequestDto cancelDto = new PaymentCancelRequestDto(
-                this.orderNumber,
-                String.format("결제 요청 취소 (사유: %s)", cancelReason),
-                0L // 결제 하지 않았으니 0원
-        );
-
-        publishEvent(new MarketOrderPaymentRequestCanceledEvent(cancelDto));
+        // Payment 모듈에 결제 전 취소 알림 (REQUESTED → CANCELED)
+        BeforePaymentCancelRequestDto cancelDto = new BeforePaymentCancelRequestDto(this.orderNumber);
+        publishEvent(new MarketOrderBeforePaymentCanceledEvent(cancelDto));
     }
 
     /**
-     * 주문 전체 취소 2. PG 결제창에서 결제까지 완료 한 경우
+     * 주문 전체 취소 2. 결제까지 완료 한 경우
      */
     public void cancel(CancelReasonType cancelReasonType, String cancelReasonDetail) {
         if (!this.state.isCancellable()) {
