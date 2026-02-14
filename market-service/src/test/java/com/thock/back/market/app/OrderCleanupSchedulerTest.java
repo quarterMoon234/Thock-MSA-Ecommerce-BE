@@ -40,14 +40,14 @@ class OrderCleanupSchedulerTest {
     @BeforeEach
     void setUp() {
         cancelledOrder = mock(Order.class);
-        when(cancelledOrder.getId()).thenReturn(1L);
-        when(cancelledOrder.getOrderNumber()).thenReturn("ORDER-20250101-ABC123");
     }
 
     @Test
     @DisplayName("30일 지난 CANCELLED 주문을 삭제하고 이벤트를 발행한다")
     void cleanupCancelledOrders_deletesExpiredOrdersAndPublishesEvent() {
         // given
+        when(cancelledOrder.getId()).thenReturn(1L);
+        when(cancelledOrder.getOrderNumber()).thenReturn("ORDER-20250101-ABC123");
         when(orderRepository.findByStateAndCancelDateBefore(
                 eq(OrderState.CANCELLED), any(LocalDateTime.class)))
                 .thenReturn(List.of(cancelledOrder));
