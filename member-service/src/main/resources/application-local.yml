@@ -10,7 +10,7 @@ spring:
 
   # Local MySQL (Docker Compose로 띄운 MySQL 사용)
   datasource:
-    url: jdbc:mysql://localhost:3307/member_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+    url: jdbc:mysql://localhost:3307/thock_member_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul&characterEncoding=UTF-8
     username: root
     password: root
     driver-class-name: com.mysql.cj.jdbc.Driver
