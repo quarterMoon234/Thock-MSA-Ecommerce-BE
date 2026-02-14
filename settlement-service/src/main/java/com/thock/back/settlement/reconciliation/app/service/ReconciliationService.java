@@ -20,6 +20,9 @@ public class ReconciliationService {
                 .map(log -> new SettlementCandidate(
                         log.getId(),
                         log.getSellerId(),
+                        log.getProductId(),
+                        log.getProductName(),
+                        log.getProductQuantity(),
                         log.getPaymentAmount(),
                         log.getOrderNo()
                 ))

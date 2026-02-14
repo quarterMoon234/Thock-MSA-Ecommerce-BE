@@ -10,12 +10,11 @@ import java.util.Map;
 
 public record OrderItemMessageDto(
         String orderNo,
-        String originalOrderNo,
         Long sellerId,
         Long productId,
         String productName,
         int productQuantity,
-        Long productAmount,
+        Long productPrice,
         Long paymentAmount, // 양수로 받고, 서비스에서 음수처리하는게 나을듯
         String eventType, // 결제 완료인지, 구매확정인지, 환불인지 알려주는 필드, 이걸 기준으로 결제/환불 매핑
         Map<String, Object> metadata,
@@ -29,10 +28,13 @@ public record OrderItemMessageDto(
         // 위에서 바뀐 Enum을 토대로 DB에 저장해야하는 TransactionType으로 매핑
         TransactionType transactionType = eventStatus.getTransactionType();
 
-        // 환불일 경우 음수로 저장
+        // 환불일 경우 수량과 가격을 음수로 저장
         Long finalAmount = this.paymentAmount;
+        int finalQuantity = this.productQuantity;
+
         if(transactionType == TransactionType.REFUND){
-            finalAmount *= (long)-1;
+            finalAmount = Math.abs(this.paymentAmount) * -1L;
+            finalQuantity = Math.abs(this.productQuantity) * -1;
         }
 
         return SalesLog.builder()
@@ -40,8 +42,8 @@ public record OrderItemMessageDto(
                 .sellerId(this.sellerId)
                 .productId(this.productId)
                 .productName(this.productName)
-                .productQuantity(this.productQuantity)
-                .productAmount(this.productAmount)
+                .productQuantity(finalQuantity)
+                .productPrice(this.productPrice)
                 .paymentAmount(finalAmount)
                 .transactionType(transactionType)
                 .metadata(this.metadata)

@@ -17,7 +17,7 @@ import java.time.LocalDateTime;
 public class ReconciliationJob {
 
     @Id
-    private Long id; // TSID (PK)
+    private Long id; // TSID
 
     @Column(nullable = false)
     private LocalDate baseDate; // 대사 기준일 (예: 2026-02-06)

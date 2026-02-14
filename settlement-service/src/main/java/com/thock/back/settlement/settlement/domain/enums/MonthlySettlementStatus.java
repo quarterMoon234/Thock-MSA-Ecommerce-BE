@@ -1,8 +1,8 @@
 package com.thock.back.settlement.settlement.domain.enums;
 
-public enum Status {
-    FAILED,
+public enum MonthlySettlementStatus {
     PENDING,
     PROCESSING,
-    COMPLETED
+    COMPLETED,
+    FAILED
 }
