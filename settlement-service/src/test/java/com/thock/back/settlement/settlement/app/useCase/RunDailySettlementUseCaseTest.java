@@ -4,8 +4,10 @@ import com.thock.back.settlement.reconciliation.app.port.GetSettlementCandidates
 import com.thock.back.settlement.reconciliation.app.port.SettlementCandidate;
 import com.thock.back.settlement.reconciliation.domain.SalesLog;
 import com.thock.back.settlement.reconciliation.out.SalesLogRepository;
+import com.thock.back.settlement.settlement.domain.SettlementFeePolicy;
 import com.thock.back.settlement.settlement.domain.DailySettlement;
 import com.thock.back.settlement.settlement.out.DailySettlementRepository;
+import com.thock.back.settlement.shared.money.Money;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -38,6 +40,9 @@ class RunDailySettlementUseCaseTest {
     @Mock
     private DailySettlementRepository dailySettlementRepository; // 가짜 Repo
 
+    @Mock
+    private SettlementFeePolicy settlementFeePolicy;
+
     @Test
     @DisplayName("정상 흐름: 2명의 판매자 데이터를 받아 정산서 2개가 생성되고 저장되어야 한다.")
     void execute_success() {
@@ -63,6 +68,11 @@ class RunDailySettlementUseCaseTest {
         // "로그 조회하라고 하면, 빈 껍데기 로그 리턴해라" (Write-back 테스트용)
         given(salesLogRepository.findAllById(anyList()))
                 .willReturn(List.of(mock(SalesLog.class), mock(SalesLog.class)));
+        given(settlementFeePolicy.calculateFee(any(Money.class)))
+                .willAnswer(invocation -> {
+                    Money payment = invocation.getArgument(0);
+                    return payment.multiply(java.math.BigDecimal.valueOf(0.2));
+                });
 
         // when (실행!)
         useCase.execute(today);

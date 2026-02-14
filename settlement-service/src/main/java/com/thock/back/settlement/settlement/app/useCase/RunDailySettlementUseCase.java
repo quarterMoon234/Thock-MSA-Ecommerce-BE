@@ -6,13 +6,13 @@ import com.thock.back.settlement.reconciliation.domain.SalesLog;
 import com.thock.back.settlement.reconciliation.out.SalesLogRepository;
 import com.thock.back.settlement.settlement.domain.DailySettlement;
 import com.thock.back.settlement.settlement.domain.DailySettlementItem;
+import com.thock.back.settlement.settlement.domain.SettlementFeePolicy;
 import com.thock.back.settlement.settlement.out.DailySettlementRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
@@ -33,8 +33,7 @@ public class RunDailySettlementUseCase {
     private final GetSettlementCandidatesUseCase getSettlementCandidatesUseCase;
     private final SalesLogRepository salesLogRepository;
     private final DailySettlementRepository dailySettlementRepository;
-    // 수수료율 상수로 고정
-    private static final BigDecimal FEE_RATE = BigDecimal.valueOf(0.2);
+    private final SettlementFeePolicy settlementFeePolicy;
 
     @Transactional
     public void execute(LocalDate targetDate) {
@@ -64,7 +63,7 @@ public class RunDailySettlementUseCase {
             processSettlementItems(settlement, sellerItems);
 
             // 3-3. 금액 계산
-            settlement.calculateTotalAmount(FEE_RATE);
+            settlement.calculateTotalAmount(settlementFeePolicy);
 
             // 4. DB 저장
             DailySettlement savedSettlement = dailySettlementRepository.save(settlement);

@@ -7,11 +7,11 @@ import com.thock.back.settlement.settlement.domain.enums.DailySettlementStatus;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 @Entity
 @Getter
@@ -63,7 +63,8 @@ public class DailySettlement {
     }
 
     // ----------- 비즈니스메소드 ----------
-    public void calculateTotalAmount(BigDecimal feeRate){
+    public void calculateTotalAmount(SettlementFeePolicy feePolicy){
+        Objects.requireNonNull(feePolicy, "feePolicy must not be null");
         Money totalAmounts = Money.zero();
         // 해당 정산서의 총 판매액을 계산
         for(DailySettlementItem item : this.items){
@@ -71,7 +72,7 @@ public class DailySettlement {
         }
 
         // 수수료 계산
-        Money fee = totalAmounts.multiply(feeRate);
+        Money fee = feePolicy.calculateFee(totalAmounts);
 
         // 가정산 금액 계산
         Money dailyPayout = totalAmounts.minus(fee);
