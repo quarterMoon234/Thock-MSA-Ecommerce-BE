@@ -82,11 +82,11 @@ class RunDailySettlementUseCaseTest {
                 .findFirst().orElseThrow();
 
         // 총액: 10000 + 10000 = 20000
-        assertThat(settlementA.getPaymentAmount()).isEqualTo(20000L);
+        assertThat(settlementA.getPaymentAmount().amount()).isEqualTo(20000L);
         // 수수료(20%): 4000
-        assertThat(settlementA.getFeeAmount()).isEqualTo(4000L);
+        assertThat(settlementA.getFeeAmount().amount()).isEqualTo(4000L);
         // 지급액: 16000
-        assertThat(settlementA.getSettlementAmount()).isEqualTo(16000L);
+        assertThat(settlementA.getSettlementAmount().amount()).isEqualTo(16000L);
         // 아이템 개수: 2건을 합쳐서 키보드 1개가 되었는지?
         assertThat(settlementA.getItems()).hasSize(1);
         assertThat(settlementA.getItems().get(0).getFinalQuantity()).isEqualTo(2); // 수량 합산 확인
@@ -96,7 +96,7 @@ class RunDailySettlementUseCaseTest {
                 .filter(s -> s.getSellerId().equals(200L))
                 .findFirst().orElseThrow();
 
-        assertThat(settlementB.getPaymentAmount()).isEqualTo(15000L);
+        assertThat(settlementB.getPaymentAmount().amount()).isEqualTo(15000L);
     }
 
     @Test

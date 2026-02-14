@@ -101,7 +101,7 @@ public class RunDailySettlementUseCase {
         // 상품별로 그루핑된 데이터들을 저장하여 세부내역서 생성. 이 때, 결제/환불로 0원처리 된 것들은 제외.
         for (List<SettlementCandidate> productLogs : itemsByProduct.values()) {
             DailySettlementItem item = DailySettlementItem.from(productLogs);
-            if (item.getFinalQuantity() == 0 && item.getFinalAmount() == 0) {
+            if (item.getFinalQuantity() == 0 && item.getFinalAmount().isZero()) {
                 continue;
             }
             settlement.addItem(item);
