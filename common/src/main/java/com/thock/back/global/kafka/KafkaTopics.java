@@ -19,6 +19,7 @@ public class KafkaTopics {
 
     // Payment events
     public static final String PAYMENT_REFUND_COMPLETED = "payment.refund.completed";
+    public static final String PAYMENT_COMPLETED = "payment.completed";
 
     // Settlement events
     public static final String SETTLEMENT_COMPLETED = "settlement.completed";
