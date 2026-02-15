@@ -40,7 +40,7 @@ public class KafkaEventPublisher {
             return KafkaTopics.MEMBER_MODIFIED;
         } else if (event instanceof MarketOrderPaymentRequestedEvent) {
             return KafkaTopics.MARKET_ORDER_PAYMENT_REQUESTED;
-        } else if (event instanceof MarketOrderPaymentCompletedEvent) {
+        } else if (event instanceof PaymentCompletedEvent) {
             return KafkaTopics.MARKET_ORDER_PAYMENT_COMPLETED;
         } else if (event instanceof MarketOrderPaymentRequestCanceledEvent) {
             return KafkaTopics.MARKET_ORDER_PAYMENT_REQUEST_CANCELED;
