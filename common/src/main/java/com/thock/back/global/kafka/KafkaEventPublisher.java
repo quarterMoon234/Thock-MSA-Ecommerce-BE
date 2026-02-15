@@ -49,6 +49,8 @@ public class KafkaEventPublisher {
             return KafkaTopics.MARKET_ORDER_BEFORE_PAYMENT_REQUEST_CANCELED;
         } else if (event instanceof MarketOrderDeletedEvent) {
             return KafkaTopics.MARKET_ORDER_DELETED;
+        } else if (event instanceof MarketOrderSettlementEvent) {
+            return KafkaTopics.MARKET_ORDER_SETTLEMENT;
         }
 
         return null;
