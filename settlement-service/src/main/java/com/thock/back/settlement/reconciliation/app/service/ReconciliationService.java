@@ -8,6 +8,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+
+// 대사 끝난 정산 후보군을 정산 모듈로 보내주는 서비스
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
