@@ -51,6 +51,7 @@ class RunReconciliationUseCaseTest {
     @BeforeEach
     void setUp() {
         testDate = LocalDate.of(2026, 2, 11);
+        lenient().when(salesLogRepository.findByOrderNo(any())).thenReturn(List.of());
     }
 
     @Test
@@ -268,6 +269,36 @@ class RunReconciliationUseCaseTest {
         assertThat(savedLog.getInternalAmount().amount()).isEqualTo(50000L);
         assertThat(savedLog.getPgAmount().amount()).isEqualTo(0L); // PG 데이터가 없으므로 0원
         assertThat(savedLog.getReason()).contains("PG 내역 없음");
+    }
+
+    @Test
+    @DisplayName("[실패] 상태 불일치 (STATUS_DIFF) - 주문은 존재하지만 결제/환불 타입이 다름")
+    void execute_Fail_StatusDiff() {
+        // given: PG는 결제(PAID)인데 내부엔 환불(REFUND) 내역만 존재
+        String orderNo = "ORD-STATUS-DIFF";
+        PgSalesRaw pgRaw = createPgRaw(orderNo, PgStatus.PAID, 50000L);
+        SalesLog refundLog = createSalesLog(orderNo, TransactionType.REFUND, -50000L);
+
+        when(pgSalesRawRepository.findAllByTransactedAtBetween(any(), any()))
+                .thenReturn(List.of(pgRaw));
+        when(salesLogRepository.findByOrderNoAndTransactionType(orderNo, TransactionType.PAYMENT))
+                .thenReturn(List.of()); // 동일 상태 타입 조회 결과 없음
+        when(salesLogRepository.findByOrderNo(orderNo))
+                .thenReturn(List.of(refundLog)); // 같은 주문번호는 존재
+
+        // when
+        runReconciliationUseCase.execute(testDate);
+
+        // then
+        assertThat(refundLog.getReconciliationStatus()).isEqualTo(ReconciliationStatus.MISMATCH);
+
+        ArgumentCaptor<ReconciliationMismatchLog> logCaptor = ArgumentCaptor.forClass(ReconciliationMismatchLog.class);
+        verify(mismatchLogRepository, times(1)).save(logCaptor.capture());
+
+        ReconciliationMismatchLog savedLog = logCaptor.getValue();
+        assertThat(savedLog.getType()).isEqualTo(MismatchType.STATUS_DIFF);
+        assertThat(savedLog.getOrderNo()).isEqualTo(orderNo);
+        assertThat(savedLog.getReason()).contains("상태 불일치");
     }
 
     @Test

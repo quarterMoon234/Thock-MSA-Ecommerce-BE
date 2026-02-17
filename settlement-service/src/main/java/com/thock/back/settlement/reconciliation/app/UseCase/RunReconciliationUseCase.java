@@ -88,7 +88,23 @@ public class RunReconciliationUseCase {
                         .filter(p -> p.getMerchantUid().equals(merchantUid) && p.getPgStatus() == pgStatus)
                         .findFirst().orElse(null);
 
-                saveMismatchLog(job, samplePg, null, Money.zero(), MismatchType.PG_ONLY, "주문서 누락");
+                List<SalesLog> sameOrderLogs = salesLogRepository.findByOrderNo(merchantUid);
+                if (!sameOrderLogs.isEmpty()) {
+                    sameOrderLogs.forEach(SalesLog::mismatchReconciliation);
+                    long internalTotal = sameOrderLogs.stream()
+                            .mapToLong(log -> log.getPaymentAmount().amount())
+                            .sum();
+                    saveMismatchLog(
+                            job,
+                            samplePg,
+                            sameOrderLogs.get(0),
+                            Money.of(internalTotal),
+                            MismatchType.STATUS_DIFF,
+                            "상태 불일치"
+                    );
+                } else {
+                    saveMismatchLog(job, samplePg, null, Money.zero(), MismatchType.PG_ONLY, "주문서 누락");
+                }
                 mismatchCount++;
                 continue;
             }
