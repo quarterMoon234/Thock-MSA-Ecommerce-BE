@@ -150,4 +150,25 @@ public class ApiV1OrderController {
         );
         return ResponseEntity.noContent().build();
     }
+
+    @Operation(
+            summary = "주문 구매 확정",
+            description = "배송 완료된 주문을 구매 확정합니다. " +
+                    "구매 확정 후에는 CS 문의 후 환불이 가능하며, 정산 처리가 진행됩니다."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "구매 확정 성공"),
+            @ApiResponse(responseCode = "400", description = "구매 확정 불가능한 상태 (배송 완료 전)"),
+            @ApiResponse(responseCode = "403", description = "본인의 주문이 아님"),
+            @ApiResponse(responseCode = "404", description = "주문을 찾을 수 없음")
+    })
+    @PostMapping("/{orderId}/confirm")
+    public ResponseEntity<Void> confirmOrder(
+            @AuthUser AuthenticatedUser user,
+            @PathVariable Long orderId) {
+        Long memberId = user.memberId();
+        log.info("Market Order API : confirmOrder / memberId = {}, orderId = {}", memberId, orderId);
+        marketFacade.confirmOrder(memberId, orderId);
+        return ResponseEntity.noContent().build();
+    }
 }

@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 public interface OrderItemRepository extends JpaRepository<OrderItem, Long> {
@@ -26,4 +27,10 @@ public interface OrderItemRepository extends JpaRepository<OrderItem, Long> {
             OrderItemState state,
             LocalDate date
     );
+
+    /**
+     * 자동 구매 확정 대상 조회
+     * 배송 완료 후 N일 경과한 DELIVERED 상태 아이템
+     */
+    List<OrderItem> findByStateAndDeliveredAtBefore(OrderItemState state, LocalDateTime before);
 }

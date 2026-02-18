@@ -2,6 +2,7 @@ package com.thock.back.market.app;
 
 import com.thock.back.global.config.GlobalConfig;
 import com.thock.back.global.eventPublisher.EventPublisher;
+import com.thock.back.market.app.scheduler.OrderTimeoutScheduler;
 import com.thock.back.market.domain.*;
 import com.thock.back.market.out.repository.OrderCancelHistoryRepository;
 import com.thock.back.market.out.repository.OrderRepository;

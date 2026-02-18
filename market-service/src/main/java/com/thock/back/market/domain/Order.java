@@ -340,44 +340,68 @@ public class Order extends BaseIdAndTime {
 
     /**
      * Order 전체 상태를 OrderItem 상태 기반으로 계산
+     * 주로 부분 취소(cancelItems) 후 호출됨
      */
     public void updateStateFromItems() {
         if (items.isEmpty()) {
             return;
         }
 
-        long confirmedCount = items.stream()
-                .filter(item -> item.getState() == OrderItemState.CONFIRMED)
-                .count();
-
-        long cancelledCount = items.stream()
-                .filter(item -> item.getState() == OrderItemState.CANCELLED)
-                .count();
-
-        long shippingCount = items.stream()
-                .filter(item -> item.getState() == OrderItemState.SHIPPING)
-                .count();
-
-        long deliveredCount = items.stream()
-                .filter(item -> item.getState() == OrderItemState.DELIVERED)
-                .count();
-
         int totalItems = items.size();
 
+        // 각 상태별 카운트
+        long confirmedCount = countItemsByState(OrderItemState.CONFIRMED);
+        long cancelledCount = countItemsByState(OrderItemState.CANCELLED);
+        long refundedCount = countItemsByState(OrderItemState.REFUNDED);
+        long deliveredCount = countItemsByState(OrderItemState.DELIVERED);
+        long shippingCount = countItemsByState(OrderItemState.SHIPPING);
+        long preparingCount = countItemsByState(OrderItemState.PREPARING);
+        long paymentCompletedCount = countItemsByState(OrderItemState.PAYMENT_COMPLETED);
+
+        // 취소/환불된 아이템 수
+        long cancelledOrRefundedCount = cancelledCount + refundedCount;
+
+        // 1. 모든 아이템이 구매 확정
         if (confirmedCount == totalItems) {
             this.state = OrderState.CONFIRMED;
-        } else if (cancelledCount == totalItems) {
+        }
+        // 2. 모든 아이템이 환불 완료
+        else if (refundedCount == totalItems) {
+            this.state = OrderState.REFUNDED;
+        }
+        // 3. 모든 아이템이 취소됨
+        else if (cancelledCount == totalItems) {
             this.state = OrderState.CANCELLED;
-        } else if (cancelledCount > 0) {
+        }
+        // 4. 일부 아이템 환불 완료 (나머지는 구매 확정)
+        else if (refundedCount > 0 && (refundedCount + confirmedCount) == totalItems) {
+            this.state = OrderState.PARTIALLY_REFUNDED;
+        }
+        // 5. 일부 아이템 취소 (환불 대기 중)
+        else if (cancelledOrRefundedCount > 0) {
             this.state = OrderState.PARTIALLY_CANCELLED;
-        } else if (deliveredCount == totalItems) {
+        }
+        // 6. 모든 아이템 배송 완료
+        else if (deliveredCount == totalItems) {
             this.state = OrderState.DELIVERED;
-        } else if (shippingCount > 0) {
-            this.state = shippingCount == totalItems ?
+        }
+        // 7. 배송 중
+        else if (shippingCount > 0) {
+            this.state = (shippingCount + deliveredCount) == totalItems ?
                     OrderState.SHIPPING : OrderState.PARTIALLY_SHIPPED;
-        } else if (this.state == OrderState.PAYMENT_COMPLETED) {
+        }
+        // 8. 배송 준비 중
+        else if (preparingCount > 0) {
             this.state = OrderState.PREPARING;
         }
+        // 9. 결제 완료 상태 유지
+        else if (paymentCompletedCount == totalItems) {
+            this.state = OrderState.PAYMENT_COMPLETED;
+        }
+    }
+
+    private long countItemsByState(OrderItemState state) {
+        return items.stream().filter(item -> item.getState() == state).count();
     }
 
     public boolean isPaymentInProgress() {
