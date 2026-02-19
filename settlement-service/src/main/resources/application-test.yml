@@ -1,9 +1,12 @@
 spring:
   autoconfigure:
-    exclude: org.springframework.boot.autoconfigure.batch.BatchAutoConfiguration
-
+    exclude:
+      - org.springframework.boot.autoconfigure.batch.BatchAutoConfiguration
+      - org.springframework.boot.autoconfigure.kafka.KafkaAutoConfiguration
   kafka:
     bootstrap-servers: localhost:9092
+    listener:
+      auto-startup: false
 
   application:
     name: settlement_service
