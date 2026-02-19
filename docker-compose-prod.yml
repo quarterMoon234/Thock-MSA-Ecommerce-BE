@@ -3,16 +3,18 @@ services:
   api-gateway:
     image: sang234/api-gateway:latest
     container_name: api-gateway
-    ports:
-      - "8080:8080"
+    expose:
+      - "8080"
     env_file:
       - .env
     environment:
       TZ: Asia/Seoul
       JAVA_OPTS: -Duser.timezone=Asia/Seoul
-      SPRING_PROFILES_ACTIVE: docker
+      SPRING_PROFILES_ACTIVE: prod
       JWT_SECRET_KEY: ${JWT_SECRET_KEY}
       LOG_PATH: /app/logs
+    volumes:
+      - ./logs/api-gateway:/app/logs
     depends_on:
       mysql:
         condition: service_healthy
@@ -43,7 +45,7 @@ services:
     environment:
       TZ: Asia/Seoul
       JAVA_OPTS: -Duser.timezone=Asia/Seoul
-      SPRING_PROFILES_ACTIVE: docker
+      SPRING_PROFILES_ACTIVE: prod
       MYSQL_HOST: mysql
       MYSQL_PORT: 3306
       MYSQL_DATABASE: thock_member_db
@@ -51,6 +53,8 @@ services:
       MYSQL_PASSWORD: ${MEMBER_DB_PASSWORD}
       KAFKA_BOOTSTRAP_SERVERS: redpanda:29092
       LOG_PATH: /app/logs
+    volumes:
+      - ./logs/member:/app/logs
     depends_on:
       mysql:
         condition: service_healthy
@@ -70,7 +74,7 @@ services:
     environment:
       TZ: Asia/Seoul
       JAVA_OPTS: -Duser.timezone=Asia/Seoul
-      SPRING_PROFILES_ACTIVE: docker
+      SPRING_PROFILES_ACTIVE: prod
       MYSQL_HOST: mysql
       MYSQL_PORT: 3306
       MYSQL_DATABASE: thock_product_db
@@ -78,6 +82,8 @@ services:
       MYSQL_PASSWORD: ${PRODUCT_DB_PASSWORD}
       KAFKA_BOOTSTRAP_SERVERS: redpanda:29092
       LOG_PATH: /app/logs
+    volumes:
+      - ./logs/product:/app/logs
     depends_on:
       mysql:
         condition: service_healthy
@@ -97,7 +103,7 @@ services:
     environment:
       TZ: Asia/Seoul
       JAVA_OPTS: -Duser.timezone=Asia/Seoul
-      SPRING_PROFILES_ACTIVE: docker
+      SPRING_PROFILES_ACTIVE: prod
       MYSQL_HOST: mysql
       MYSQL_PORT: 3306
       MYSQL_DATABASE: thock_market_db
@@ -107,6 +113,8 @@ services:
       PAYMENT_SERVICE_URL: http://payment-service:8084
       KAFKA_BOOTSTRAP_SERVERS: redpanda:29092
       LOG_PATH: /app/logs
+    volumes:
+      - ./logs/market:/app/logs
     depends_on:
       mysql:
         condition: service_healthy
@@ -130,7 +138,7 @@ services:
     environment:
       TZ: Asia/Seoul
       JAVA_OPTS: -Duser.timezone=Asia/Seoul
-      SPRING_PROFILES_ACTIVE: docker
+      SPRING_PROFILES_ACTIVE: prod
       MYSQL_HOST: mysql
       MYSQL_PORT: 3306
       MYSQL_DATABASE: thock_payment_db
@@ -138,6 +146,8 @@ services:
       MYSQL_PASSWORD: ${PAYMENT_DB_PASSWORD}
       KAFKA_BOOTSTRAP_SERVERS: redpanda:29092
       LOG_PATH: /app/logs
+    volumes:
+      - ./logs/payment:/app/logs
     depends_on:
       mysql:
         condition: service_healthy
@@ -157,7 +167,7 @@ services:
     environment:
       TZ: Asia/Seoul
       JAVA_OPTS: -Duser.timezone=Asia/Seoul
-      SPRING_PROFILES_ACTIVE: docker
+      SPRING_PROFILES_ACTIVE: prod
       MYSQL_HOST: mysql
       MYSQL_PORT: 3306
       MYSQL_DATABASE: thock_settlement_db
@@ -165,6 +175,8 @@ services:
       MYSQL_PASSWORD: ${SETTLEMENT_DB_PASSWORD}
       KAFKA_BOOTSTRAP_SERVERS: redpanda:29092
       LOG_PATH: /app/logs
+    volumes:
+      - ./logs/settlement:/app/logs
     depends_on:
       mysql:
         condition: service_healthy
@@ -199,10 +211,12 @@ services:
     container_name: redpanda-console
     depends_on:
       - redpanda
-    ports:
-      - "8090:8090"
+    expose:
+      - "8090"
     environment:
       KAFKA_BROKERS: redpanda:29092
+      SERVER_BASEPATH: /redpanda
+      SERVER_SETBASEPATHFROMXFORWARDEDPREFIX: "true"
       SERVER_LISTENPORT: 8090
     networks:
       - internal
@@ -212,8 +226,6 @@ services:
   mysql:
     image: mysql:8.0
     container_name: thock-mysql
-    ports:
-      - "3307:3306"
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       TZ: Asia/Seoul
@@ -233,8 +245,8 @@ services:
   prometheus:
     image: prom/prometheus:v2.49.1
     container_name: prometheus
-    ports:
-      - "9090:9090"
+    expose:
+      - "9090"
     volumes:
       - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
       - prometheus-data:/prometheus
@@ -250,8 +262,8 @@ services:
   loki:
     image: grafana/loki:2.9.4
     container_name: loki
-    ports:
-      - "3100:3100"
+    expose:
+      - "3100"
     volumes:
       - ./monitoring/loki/loki-config.yml:/etc/loki/local-config.yaml
       - loki-data:/loki
@@ -282,14 +294,14 @@ services:
   grafana:
     image: grafana/grafana:10.3.1
     container_name: grafana
-    ports:
-      - "3000:3000"
+    expose:
+      - "3000"
     environment:
       GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER}
       GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD}
       GF_USERS_ALLOW_SIGN_UP: "false"
-      GF_SERVER_ROOT_URL: http://localhost:3000/
-      GF_SERVER_SERVE_FROM_SUB_PATH: "false"
+      GF_SERVER_ROOT_URL: https://api.thock.site/grafana/
+      GF_SERVER_SERVE_FROM_SUB_PATH: "true"
     volumes:
       - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
       - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards
@@ -300,6 +312,33 @@ services:
     networks:
       - internal
     restart: unless-stopped
+
+  # ==================== Nginx (Reverse Proxy) ====================
+  nginx:
+    image: nginx:latest
+    container_name: nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/certbot/www:/var/www/certbot
+      - ./nginx/certbot/conf:/etc/letsencrypt
+    depends_on:
+      - api-gateway
+    networks:
+      - internal
+    restart: unless-stopped
+
+  certbot:
+    image: certbot/certbot
+    container_name: certbot
+    volumes:
+      - ./nginx/certbot/www:/var/www/certbot
+      - ./nginx/certbot/conf:/etc/letsencrypt
+    command: certonly --webroot -w /var/www/certbot -d api.thock.site --email admin@thock.site --agree-tos --no-eff-email
+    networks:
+      - internal
 
 # ==================== Networks ====================
 networks:

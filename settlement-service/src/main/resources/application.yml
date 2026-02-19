@@ -2,15 +2,12 @@ server:
   port: 8085
 
 spring:
-  config:
-    import:
-      - optional:file:./settlement-service/.env[.properties]
   application:
     name: settlement-service
+
   jackson:
     time-zone: Asia/Seoul
-  kafka:
-    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+
   jpa:
     hibernate:
       ddl-auto: update
@@ -18,14 +15,16 @@ spring:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.MySQLDialect
+
   datasource:
     url: jdbc:mysql://${MYSQL_HOST:${SETTLEMENT_MYSQL_HOST:127.0.0.1}}:${MYSQL_PORT:${SETTLEMENT_MYSQL_PORT:3306}}/${MYSQL_DATABASE:${SETTLEMENT_MYSQL_DATABASE:settlement_db}}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&createDatabaseIfNotExist=true
     username: ${MYSQL_USER:${SETTLEMENT_MYSQL_USER:root}}
     password: ${MYSQL_PASSWORD:${SETTLEMENT_MYSQL_PASSWORD:}}
     driver-class-name: com.mysql.cj.jdbc.Driver
 
+# JWT 설정
 jwt:
-  secret: ${JWT_SECRET_KEY:}
+  secret: ${JWT_SECRET_KEY:thock-2026-backend-authentication-jwt-secret-key-very-very-long-256bit}
   access-token-exp-seconds: 1800
   refresh-token-exp-seconds: 1209600
   issuer: "thock"
@@ -43,10 +42,10 @@ management:
     tags:
       application: ${spring.application.name}
 
-# SpringDoc (Swagger) 설정
+# SpringDoc
 springdoc:
   api-docs:
     enabled: true
     path: /v3/api-docs
   swagger-ui:
-    enabled: false  # Gateway에서만 UI 제공
+    enabled: false
