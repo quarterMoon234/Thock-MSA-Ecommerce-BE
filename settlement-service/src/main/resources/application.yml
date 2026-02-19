@@ -8,9 +8,6 @@ spring:
   jackson:
     time-zone: Asia/Seoul
 
-  datasource:
-    driver-class-name: com.mysql.cj.jdbc.Driver
-
   jpa:
     hibernate:
       ddl-auto: update
@@ -18,6 +15,7 @@ spring:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.MySQLDialect
+
   datasource:
     url: jdbc:mysql://${MYSQL_HOST:${SETTLEMENT_MYSQL_HOST:127.0.0.1}}:${MYSQL_PORT:${SETTLEMENT_MYSQL_PORT:3306}}/${MYSQL_DATABASE:${SETTLEMENT_MYSQL_DATABASE:settlement_db}}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&createDatabaseIfNotExist=true
     username: ${MYSQL_USER:${SETTLEMENT_MYSQL_USER:root}}

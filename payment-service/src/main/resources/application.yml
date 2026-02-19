@@ -24,11 +24,11 @@ custom:
   payment:
     toss:
       payments:
-        secretKey: ${TOSS_PAYMENTS_SECRET_KEY:test_sk_XZYkKL4MrjwyjXjjqeOL80zJwlEW}
+        secretKey: ${TOSS_PAYMENTS_SECRET_KEY}
 
 # JWT 설정
 jwt:
-  secret: ${JWT_SECRET_KEY:thock-2026-backend-authentication-jwt-secret-key-very-very-long-256bit}
+  secret: ${JWT_SECRET_KEY}
   access-token-exp-seconds: 1800
   refresh-token-exp-seconds: 1209600
   issuer: "thock"
