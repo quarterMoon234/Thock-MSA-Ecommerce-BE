@@ -2,8 +2,13 @@ spring:
   application:
     name: product-service
 
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.kafka.KafkaAutoConfiguration
   kafka:
     bootstrap-servers: localhost:9092
+    listener:
+      auto-startup: false
 
   datasource:
     url: jdbc:mysql://localhost:3306/test_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul&characterEncoding=UTF-8
