@@ -57,6 +57,9 @@ public class OrderItem extends BaseIdAndTime {
     private CancelReasonType cancelReasonType;
     private String cancelReasonDetail;
 
+    // 배송 완료 시간 (자동 구매확정 스케줄러용)
+    private LocalDateTime deliveredAt;
+
     public OrderItem(Order order, Long sellerId, Long productId, String productName,
                      String productImageUrl, Long price, Long salePrice,
                      Integer quantity) {
@@ -108,6 +111,7 @@ public class OrderItem extends BaseIdAndTime {
             throw new CustomException(ErrorCode.ORDER_INVALID_STATE);
         }
         this.state = OrderItemState.DELIVERED;
+        this.deliveredAt = LocalDateTime.now();
     }
 
     public void confirm() {

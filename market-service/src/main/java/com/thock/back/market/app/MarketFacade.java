@@ -26,6 +26,7 @@ public class MarketFacade {
     private final MarketCompleteOrderPaymentUseCase marketCompleteOrderPaymentUseCase; // 결제 완료
     private final MarketCancelOrderPaymentUseCase marketCancelOrderPaymentUseCase; // 주문 취소
     private final MarketCompleteRefundUseCase marketCompleteRefundUseCase; // 환불
+    private final MarketConfirmOrderUseCase marketConfirmOrderUseCase; // 구매 확정
     // 조회 전용
     private final CartService cartService;
     private final OrderService orderService;
@@ -94,5 +95,10 @@ public class MarketFacade {
     @Transactional
     public void completeRefund(String orderNumber) {
         marketCompleteRefundUseCase.completeRefund(orderNumber);
+    }
+
+    @Transactional
+    public void confirmOrder(Long memberId, Long orderId) {
+        marketConfirmOrderUseCase.confirmOrder(memberId, orderId);
     }
 }

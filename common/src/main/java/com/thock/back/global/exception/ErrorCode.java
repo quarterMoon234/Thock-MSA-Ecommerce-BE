@@ -78,6 +78,7 @@ public enum ErrorCode {
     ORDER_CANNOT_REFUND("ORDER-400-4", "환불이 불가능한 상태입니다.", HttpStatus.BAD_REQUEST),
     ORDER_NO_ITEMS_SELECTED("ORDER-400-5    ", "주문할 상품을 선택해주세요.", HttpStatus.BAD_REQUEST),
     ORDER_USER_FORBIDDEN("ORDER-403-1", "주문 취소할 권한이 없습니다.", HttpStatus.FORBIDDEN),
+    ORDER_ACCESS_DENIED("ORDER-403-2", "본인의 주문이 아닙니다.", HttpStatus.FORBIDDEN),
     ORDER_NOT_FOUND("ORDER-404-1", "주문을 찾을 수 없습니다", HttpStatus.NOT_FOUND),
     ORDER_ITEM_NOT_FOUND("ORDER-404-1", "주문 상품을 찾을 수 없습니다", HttpStatus.NOT_FOUND),
     ORDER_PENDING_EXISTS("ORDER-409-1", "이미 결제 대기 중인 주문이 있습니다.", HttpStatus.CONFLICT),
