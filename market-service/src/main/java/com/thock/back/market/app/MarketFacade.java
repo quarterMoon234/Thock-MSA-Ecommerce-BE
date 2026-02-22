@@ -101,4 +101,9 @@ public class MarketFacade {
     public void confirmOrder(Long memberId, Long orderId) {
         marketConfirmOrderUseCase.confirmOrder(memberId, orderId);
     }
+
+    @Transactional
+    public void confirmOrderItems(Long memberId, Long orderId, List<Long> orderItemIds) {
+        marketConfirmOrderUseCase.confirmOrderItems(memberId, orderId, orderItemIds);
+    }
 }
