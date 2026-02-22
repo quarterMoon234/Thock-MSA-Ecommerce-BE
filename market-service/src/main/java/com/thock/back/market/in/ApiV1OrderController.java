@@ -7,6 +7,7 @@ import com.thock.back.market.app.MarketFacade;
 import com.thock.back.market.in.dto.req.OrderCancelRequest;
 import com.thock.back.market.in.dto.req.OrderCreateRequest;
 import com.thock.back.market.in.dto.req.OrderItemsCancelRequest;
+import com.thock.back.market.in.dto.req.OrderItemsConfirmRequest;
 import com.thock.back.market.in.dto.res.OrderCreateResponse;
 import com.thock.back.market.in.dto.res.OrderDetailResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -152,7 +153,7 @@ public class ApiV1OrderController {
     }
 
     @Operation(
-            summary = "주문 구매 확정",
+            summary = "주문 전체 구매 확정",
             description = "배송 완료된 주문을 구매 확정합니다. " +
                     "구매 확정 후에는 CS 문의 후 환불이 가능하며, 정산 처리가 진행됩니다."
     )
@@ -169,6 +170,29 @@ public class ApiV1OrderController {
         Long memberId = user.memberId();
         log.info("Market Order API : confirmOrder / memberId = {}, orderId = {}", memberId, orderId);
         marketFacade.confirmOrder(memberId, orderId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @Operation(
+            summary = "주문 상품 부분 구매 확정",
+            description = "주문 내 선택한 상품들을 구매 확정합니다. " +
+                    "단건 확정: [1], 다건 확정: [1, 2, 3], 배송 완료된 상품만 구매 확정 가능합니다."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "부분 구매 확정 성공"),
+            @ApiResponse(responseCode = "400", description = "구매 확정 불가능한 상태 (배송 완료 전)"),
+            @ApiResponse(responseCode = "403", description = "본인의 주문이 아님"),
+            @ApiResponse(responseCode = "404", description = "주문 또는 상품을 찾을 수 없음")
+    })
+    @PostMapping("/{orderId}/items/confirm")
+    public ResponseEntity<Void> confirmOrderItems(
+            @AuthUser AuthenticatedUser user,
+            @PathVariable Long orderId,
+            @Valid @RequestBody OrderItemsConfirmRequest request) {
+        Long memberId = user.memberId();
+        log.info("Market Order API : confirmOrderItems / memberId = {}, orderId = {}, orderItemIds = {}",
+                memberId, orderId, request.orderItemIds());
+        marketFacade.confirmOrderItems(memberId, orderId, request.orderItemIds());
         return ResponseEntity.noContent().build();
     }
 }

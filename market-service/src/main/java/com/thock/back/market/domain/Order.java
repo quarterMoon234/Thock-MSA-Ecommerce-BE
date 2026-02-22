@@ -339,8 +339,63 @@ public class Order extends BaseIdAndTime {
     }
 
     /**
+     * 주문 전체 구매 확정
+     */
+    public void confirm() {
+        if (!this.state.isConfirmable()) {
+            throw new CustomException(ErrorCode.ORDER_INVALID_STATE);
+        }
+
+        // 모든 OrderItem 구매 확정
+        this.items.forEach(OrderItem::confirm);
+        this.state = OrderState.CONFIRMED;
+
+        log.info("✅ 전체 구매 확정: orderId={}, orderNumber={}", getId(), orderNumber);
+
+        // Settlement 이벤트 발행 (구매 확정)
+        publishSettlementEvent(SettlementEventType.PURCHASE_CONFIRMED);
+    }
+
+    /**
+     * 부분 구매 확정
+     */
+    public void confirmItems(List<Long> orderItemIds) {
+        // 1. 확정할 아이템들 조회 및 검증
+        List<OrderItem> targetItems = orderItemIds.stream()
+                .map(id -> items.stream()
+                        .filter(item -> item.getId().equals(id))
+                        .findFirst()
+                        .orElseThrow(() -> new CustomException(ErrorCode.ORDER_ITEM_NOT_FOUND)))
+                .toList();
+        // 2. 각 아이템이 구매 확정 가능한 상태인지 확인
+        targetItems.forEach(item -> {
+            if (!item.getState().isConfirmable()) {
+                throw new CustomException(ErrorCode.ORDER_INVALID_STATE);
+            }
+        });
+        // 3. 각 아이템 구매 확정 처리
+        targetItems.forEach(OrderItem::confirm);
+
+        // 4. Order 상태 업데이트
+        updateStateFromItems();
+        log.info("✅ 부분 구매 확정: orderId={}, orderNumber={}, itemCount={}",
+                getId(), getOrderNumber(), orderItemIds.size());
+
+        // 5. Settlement 이벤트 발행 (확정된 아이템들만)
+        List<SettlementOrderItemDto> confirmedItems = targetItems.stream()
+                .map(item -> item.toSettlementDto(SettlementEventType.PURCHASE_CONFIRMED))
+                .toList();
+
+        if (!confirmedItems.isEmpty()) {
+            publishEvent(new MarketOrderSettlementEvent(confirmedItems));
+            log.info("📊 부분 구매 확정 Settlement 이벤트 발행: orderNumber={}, count={}",
+                    orderNumber, confirmedItems.size());
+        }
+
+    }
+
+    /**
      * Order 전체 상태를 OrderItem 상태 기반으로 계산
-     * 주로 부분 취소(cancelItems) 후 호출됨
      */
     public void updateStateFromItems() {
         if (items.isEmpty()) {
@@ -412,24 +467,6 @@ public class Order extends BaseIdAndTime {
 
     public boolean isPaid() {
         return this.paymentDate != null;
-    }
-
-    /**
-     * 주문 전체 구매 확정
-     */
-    public void confirm() {
-        if (!this.state.isConfirmable()) {
-            throw new CustomException(ErrorCode.ORDER_INVALID_STATE);
-        }
-
-        // 모든 OrderItem 구매 확정
-        this.items.forEach(OrderItem::confirm);
-        this.state = OrderState.CONFIRMED;
-
-        log.info("✅ 구매 확정: orderId={}, orderNumber={}", getId(), orderNumber);
-
-        // Settlement 이벤트 발행 (구매 확정)
-        publishSettlementEvent(SettlementEventType.PURCHASE_CONFIRMED);
     }
 
     /**
