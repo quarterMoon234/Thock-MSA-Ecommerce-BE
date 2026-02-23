@@ -26,7 +26,7 @@ public class DailySettlementTasklet implements Tasklet {
         LocalDate targetDate = targetDateParam == null ? LocalDate.now() : LocalDate.parse(targetDateParam);
 
         log.info("[Batch] 일별 정산 Tasklet 시작 - targetDate={}", targetDate);
-        settlementFacade.runDaily(targetDate);
+        settlementFacade.runDailySettlement(targetDate);
         log.info("[Batch] 일별 정산 Tasklet 종료 - targetDate={}", targetDate);
 
         return RepeatStatus.FINISHED;

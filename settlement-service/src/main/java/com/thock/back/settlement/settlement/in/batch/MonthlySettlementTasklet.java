@@ -26,7 +26,7 @@ public class MonthlySettlementTasklet implements Tasklet {
         YearMonth targetMonth = targetMonthParam == null ? YearMonth.now() : YearMonth.parse(targetMonthParam);
 
         log.info("[Batch] 월별 정산 Tasklet 시작 - targetMonth={}", targetMonth);
-        settlementFacade.runMonthly(targetMonth);
+        settlementFacade.runMonthlySettlement(targetMonth);
         log.info("[Batch] 월별 정산 Tasklet 종료 - targetMonth={}", targetMonth);
 
         return RepeatStatus.FINISHED;

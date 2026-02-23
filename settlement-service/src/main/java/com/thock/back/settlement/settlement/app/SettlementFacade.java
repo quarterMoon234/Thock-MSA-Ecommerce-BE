@@ -7,7 +7,6 @@ import com.thock.back.settlement.settlement.in.dto.DailySettlementItemView;
 import com.thock.back.settlement.settlement.in.dto.MonthlySettlementView;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.YearMonth;
@@ -22,25 +21,21 @@ public class SettlementFacade {
     private final SettlementQueryService settlementQueryService;
 
     // 일별 정산 실행
-    @Transactional
-    public void runDaily(LocalDate targetDate) {
+    public void runDailySettlement(LocalDate targetDate) {
         runDailySettlementUseCase.execute(targetDate);
     }
 
     // 월별 정산 실행
-    @Transactional
-    public void runMonthly(YearMonth targetMonth) {
+    public void runMonthlySettlement(YearMonth targetMonth) {
         runMonthlySettlementUseCase.execute(targetMonth);
     }
 
     // 월별 정산 내역서
-    @Transactional(readOnly = true)
     public List<MonthlySettlementView> getMonthlySummary(Long sellerId, YearMonth targetMonth) {
         return settlementQueryService.getMonthlySummary(sellerId, targetMonth);
     }
 
     // 일별 세부 내역서 실행
-    @Transactional(readOnly = true)
     public List<DailySettlementItemView> getDailyItems(Long sellerId, LocalDate targetDate) {
         return settlementQueryService.getDailyItems(sellerId, targetDate);
     }
