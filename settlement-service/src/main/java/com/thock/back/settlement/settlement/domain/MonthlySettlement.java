@@ -113,4 +113,11 @@ public class MonthlySettlement {
             this.status = MonthlySettlementStatus.PENDING; // 다음 배치 때 다시 시도하게 둠
         }
     }
+
+    public void refreshTotals(Long totalCount, Money totalPaymentAmount, Money totalFeeAmount, Money totalPayoutAmount) {
+        this.totalCount = totalCount;
+        this.totalPaymentAmount = totalPaymentAmount;
+        this.totalFeeAmount = totalFeeAmount;
+        this.totalPayoutAmount = totalPayoutAmount;
+    }
 }
