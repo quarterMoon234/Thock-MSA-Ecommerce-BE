@@ -110,6 +110,9 @@ outbox:
   cleanup:
     cron: "0 0 3 * * *"
 
+inbox:
+  enabled: true
+
 logging:
   level:
     io.github.resilience4j.circuitbreaker: DEBUG
