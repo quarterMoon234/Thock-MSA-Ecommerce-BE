@@ -188,16 +188,35 @@
     },
     {
       "datasource": "Prometheus",
-      "fieldConfig": { "defaults": { "unit": "short", "min": 0 }, "overrides": [] },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "min": 0,
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "fillOpacity": 18,
+            "showPoints": "never",
+            "pointSize": 3,
+            "spanNulls": true
+          }
+        },
+        "overrides": []
+      },
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 14 },
       "id": 10,
       "options": {
-        "legend": { "displayMode": "list", "placement": "bottom" },
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": ["lastNotNull", "max"]
+        },
         "tooltip": { "mode": "multi" }
       },
       "targets": [
         {
-          "expr": "market_kafka_consumer_lag_topic{job=\"market-service\"}",
+          "expr": "market_kafka_consumer_lag_topic{job=\"market-service\",topic=~\"$topic\"}",
           "legendFormat": "{{topic}}",
           "refId": "A"
         }
@@ -295,31 +314,50 @@
     },
     {
       "datasource": "Prometheus",
-      "fieldConfig": { "defaults": { "unit": "short", "min": 0 }, "overrides": [] },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "min": 0,
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "fillOpacity": 12,
+            "showPoints": "never",
+            "pointSize": 3,
+            "spanNulls": true
+          }
+        },
+        "overrides": []
+      },
       "gridPos": { "h": 9, "w": 24, "x": 0, "y": 27 },
       "id": 15,
       "options": {
-        "legend": { "displayMode": "table", "placement": "bottom" },
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": ["lastNotNull", "mean", "max"]
+        },
         "tooltip": { "mode": "multi" }
       },
       "targets": [
         {
-          "expr": "increase(market_kafka_inbound_received_total{job=\"market-service\"}[$__interval])",
+          "expr": "increase(market_kafka_inbound_received_total{job=\"market-service\",topic=~\"$topic\"}[$__interval])",
           "legendFormat": "RECEIVED {{topic}}",
           "refId": "A"
         },
         {
-          "expr": "increase(market_kafka_inbound_processed_total{job=\"market-service\"}[$__interval])",
+          "expr": "increase(market_kafka_inbound_processed_total{job=\"market-service\",topic=~\"$topic\"}[$__interval])",
           "legendFormat": "PROCESSED {{topic}}",
           "refId": "B"
         },
         {
-          "expr": "increase(market_kafka_inbound_duplicate_total{job=\"market-service\"}[$__interval])",
+          "expr": "increase(market_kafka_inbound_duplicate_total{job=\"market-service\",topic=~\"$topic\"}[$__interval])",
           "legendFormat": "DUPLICATE {{topic}}",
           "refId": "C"
         },
         {
-          "expr": "increase(market_kafka_inbound_failed_total{job=\"market-service\"}[$__interval])",
+          "expr": "increase(market_kafka_inbound_failed_total{job=\"market-service\",topic=~\"$topic\"}[$__interval])",
           "legendFormat": "FAILED {{topic}}",
           "refId": "D"
         }
@@ -332,7 +370,31 @@
   "schemaVersion": 38,
   "style": "dark",
   "tags": ["market", "prometheus", "kafka", "outbox", "inbound", "inbox"],
-  "templating": { "list": [] },
+  "templating": {
+    "list": [
+      {
+        "current": {
+          "selected": true,
+          "text": ["All"],
+          "value": ["$__all"]
+        },
+        "datasource": "Prometheus",
+        "definition": "label_values(market_kafka_consumer_lag_topic{job=\"market-service\"}, topic)",
+        "hide": 0,
+        "includeAll": true,
+        "label": "Topic",
+        "multi": true,
+        "name": "topic",
+        "options": [],
+        "query": "label_values(market_kafka_consumer_lag_topic{job=\"market-service\"}, topic)",
+        "refresh": 2,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 1,
+        "type": "query"
+      }
+    ]
+  },
   "time": { "from": "now-24h", "to": "now" },
   "timepicker": {},
   "timezone": "Asia/Seoul",
