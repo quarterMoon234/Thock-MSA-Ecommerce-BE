@@ -28,6 +28,9 @@ spring:
     jdbc:
       initialize-schema: always
 
+slack:
+  webhook-url: ${SETTLEMENT_SLACK_WEBHOOK_URL:}
+
 # JWT 설정
 jwt:
   secret: ${JWT_SECRET_KEY:thock-2026-backend-authentication-jwt-secret-key-very-very-long-256bit}

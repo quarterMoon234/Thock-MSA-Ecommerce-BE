@@ -53,3 +53,6 @@ logs/
 *.trace.db
 .DS_store
 .claude
+
+### Kubernetes Secrets ###
+k3s/base/secrets.yaml

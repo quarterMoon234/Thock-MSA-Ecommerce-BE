@@ -2,13 +2,17 @@ name: CD
 
 on:
   pull_request:
-    branches: [ "main", "dev" ]
+    branches: ["main", "dev"]
     types: [ closed ]
 
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
     if: github.event.pull_request.merged == true
+
+    # CHANGED: merge된 PR의 커밋 SHA를 이미지 태그로 사용
+    env:
+      IMAGE_TAG: ${{ github.event.pull_request.merge_commit_sha }}
 
     steps:
       - name: Checkout code
@@ -40,7 +44,10 @@ jobs:
           file: api-gateway/Dockerfile
           platforms: linux/amd64
           push: true
-          tags: sang234/api-gateway:latest
+          # CHANGED: latest + SHA 태그 동시 푸시
+          tags: |
+            sang234/api-gateway:latest
+            sang234/api-gateway:${{ env.IMAGE_TAG }}
 
       - name: Build and Push member-service
         uses: docker/build-push-action@v5
@@ -49,7 +56,10 @@ jobs:
           file: member-service/Dockerfile
           platforms: linux/amd64
           push: true
-          tags: sang234/member-service:latest
+          # CHANGED
+          tags: |
+            sang234/member-service:latest
+            sang234/member-service:${{ env.IMAGE_TAG }}
 
       - name: Build and Push product-service
         uses: docker/build-push-action@v5
@@ -58,7 +68,10 @@ jobs:
           file: product-service/Dockerfile
           platforms: linux/amd64
           push: true
-          tags: sang234/product-service:latest
+          # CHANGED
+          tags: |
+            sang234/product-service:latest
+            sang234/product-service:${{ env.IMAGE_TAG }}
 
       - name: Build and Push market-service
         uses: docker/build-push-action@v5
@@ -67,7 +80,10 @@ jobs:
           file: market-service/Dockerfile
           platforms: linux/amd64
           push: true
-          tags: sang234/market-service:latest
+          # CHANGED
+          tags: |
+            sang234/market-service:latest
+            sang234/market-service:${{ env.IMAGE_TAG }}
 
       - name: Build and Push payment-service
         uses: docker/build-push-action@v5
@@ -76,7 +92,10 @@ jobs:
           file: payment-service/Dockerfile
           platforms: linux/amd64
           push: true
-          tags: sang234/payment-service:latest
+          # CHANGED
+          tags: |
+            sang234/payment-service:latest
+            sang234/payment-service:${{ env.IMAGE_TAG }}
 
       - name: Build and Push settlement-service
         uses: docker/build-push-action@v5
@@ -85,11 +104,18 @@ jobs:
           file: settlement-service/Dockerfile
           platforms: linux/amd64
           push: true
-          tags: sang234/settlement-service:latest
+          # CHANGED
+          tags: |
+            sang234/settlement-service:latest
+            sang234/settlement-service:${{ env.IMAGE_TAG }}
 
   deploy:
     runs-on: ubuntu-latest
     needs: build-and-push
+
+    # CHANGED: deploy job에서도 동일 태그 사용
+    env:
+      IMAGE_TAG: ${{ github.event.pull_request.merge_commit_sha }}
 
     steps:
       - name: Load SSH key
@@ -102,11 +128,38 @@ jobs:
           mkdir -p ~/.ssh
           ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
 
-      - name: Deploy to EC2
+#      Docker Compose를 사용허는 경우, EC2에서 이미지를 pull하고 컨테이너를 재시작하는 명령을 실행
+#      - name: Deploy to EC2 with Docker Compose
+#        run: |
+#          ssh ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
+#            cd ~/deploy
+#            docker compose -f docker-compose.yml pull
+#            docker compose -f docker-compose.yml up -d
+#            docker exec nginx nginx -s reload
+#          EOF
+
+      # K3s를 사용하는 경우, EC2에서 kubectl set image 명령으로 deployment의 이미지를 업데이트하고 롤아웃 상태를 확인하는 명령을 실행
+      - name: Deploy to EC2 with K3s
         run: |
-          ssh ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
-            cd ~/deploy
-            docker compose -f docker-compose.yml pull
-            docker compose -f docker-compose.yml up -d
-            docker exec nginx nginx -s reload
+          ssh ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << EOF
+            set -e
+
+            # CHANGED: docker compose down으로 충돌 방지 (최초 1회성 안전장치)
+            cd ~/deploy 2>/dev/null && docker compose -f docker-compose.yml down || true
+
+            # CHANGED: Docker Compose 대신 K3s deployment image 교체
+            sudo k3s kubectl -n thock-prod set image deployment/api-gateway api-gateway=sang234/api-gateway:${IMAGE_TAG}
+            sudo k3s kubectl -n thock-prod set image deployment/member-service member-service=sang234/member-service:${IMAGE_TAG}
+            sudo k3s kubectl -n thock-prod set image deployment/product-service product-service=sang234/product-service:${IMAGE_TAG}
+            sudo k3s kubectl -n thock-prod set image deployment/market-service market-service=sang234/market-service:${IMAGE_TAG}
+            sudo k3s kubectl -n thock-prod set image deployment/payment-service payment-service=sang234/payment-service:${IMAGE_TAG}
+            sudo k3s kubectl -n thock-prod set image deployment/settlement-service settlement-service=sang234/settlement-service:${IMAGE_TAG}
+
+            # CHANGED: rollout 완료 확인
+            sudo k3s kubectl -n thock-prod rollout status deployment/api-gateway --timeout=300s
+            sudo k3s kubectl -n thock-prod rollout status deployment/member-service --timeout=300s
+            sudo k3s kubectl -n thock-prod rollout status deployment/product-service --timeout=300s
+            sudo k3s kubectl -n thock-prod rollout status deployment/market-service --timeout=300s
+            sudo k3s kubectl -n thock-prod rollout status deployment/payment-service --timeout=300s
+            sudo k3s kubectl -n thock-prod rollout status deployment/settlement-service --timeout=300s
           EOF

@@ -93,7 +93,7 @@ public class OutboxPoller {
 
         } catch (Exception e) {
             log.error("Failed to publish outbox event: id={}, error={}", event.getId(), e.getMessage());
-            event.markAsFailed(e.getMessage());
+            event.markAsFailed(e.getMessage(), maxRetry);
         }
     }
 
