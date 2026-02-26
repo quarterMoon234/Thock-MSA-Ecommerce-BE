@@ -146,10 +146,10 @@ public class OutboxEvent {
     /**
      * 발행 실패 처리
      */
-    public void markAsFailed(String errorMessage) {
+    public void markAsFailed(String errorMessage, int maxRetry) {
         this.retryCount++;
         this.lastErrorMessage = errorMessage;
-        if (this.retryCount >= 5) {
+        if (isMaxRetryExceeded(maxRetry)) {
             this.status = OutboxStatus.FAILED;
         } else {
             this.status = OutboxStatus.PENDING;

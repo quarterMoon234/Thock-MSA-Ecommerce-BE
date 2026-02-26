@@ -47,7 +47,7 @@ public class ProductController {
             @ApiResponse(responseCode = "400", description = "잘못된 요청"),
             @ApiResponse(responseCode = "403", description = "권한 없음 (판매자만 등록 가능)")
     })
-    @PostMapping
+    @PostMapping("/create")
     public ResponseEntity<Long> createProduct(
             @RequestBody @Valid ProductCreateRequest request,
             @AuthUser AuthenticatedUser user
