@@ -12,5 +12,5 @@ import java.util.List;
 public class RevenueLogResponseDto {
     private Long memberId;
     private Long walletId;
-    private List<RevenueLog> revenueLog;
+    private List<RevenueLogItemDto> revenueLog;
 }

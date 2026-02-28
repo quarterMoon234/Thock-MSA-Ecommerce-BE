@@ -7,11 +7,7 @@ import com.thock.back.payment.domain.PaymentLog;
 import com.thock.back.payment.domain.RevenueLog;
 import com.thock.back.payment.domain.Wallet;
 import com.thock.back.payment.domain.WalletLog;
-import com.thock.back.payment.domain.dto.response.PaymentLogItemDto;
-import com.thock.back.payment.domain.dto.response.PaymentLogResponseDto;
-import com.thock.back.payment.domain.dto.response.RevenueLogResponseDto;
-import com.thock.back.payment.domain.dto.response.WalletLogItemDto;
-import com.thock.back.payment.domain.dto.response.WalletLogResponseDto;
+import com.thock.back.payment.domain.dto.response.*;
 import com.thock.back.payment.out.*;
 import com.thock.back.shared.member.domain.MemberState;
 import com.thock.back.shared.payment.dto.WalletDto;
@@ -101,12 +97,21 @@ public class PaymentFindUseCase {
         }
 
         List<RevenueLog> logs = revenueLogRepository.findByWalletId(wallet.getId());
+        List<RevenueLogItemDto> revenueLogs = logs.stream()
+                .map(logItem -> new RevenueLogItemDto(
+                        logItem.getId(),
+                        logItem.getEventType(),
+                        logItem.getAmount(),
+                        logItem.getBalance(),
+                        logItem.getCreatedAt()
+                ))
+                .collect(Collectors.toList());
 
         log.info("수익 로그 조회 완료 - memberId={}, logCount={}", memberId, logs.size());
         return new RevenueLogResponseDto(
                 memberId,
                 wallet.getId(),
-                logs
+                revenueLogs
         );
     }
 
