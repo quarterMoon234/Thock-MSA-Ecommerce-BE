@@ -24,13 +24,15 @@ import org.springframework.context.annotation.FilterType;
                 "com.thock.back.global.security"
         },
         excludeFilters = {
+                // GlobalConfig은 Gateway에서 사용하지 않으므로 제외
                 @ComponentScan.Filter(
                         type = FilterType.REGEX,
                         pattern = "com\\.thock\\.back\\.global\\.config\\..*"
                 ),
+                // SecurityConfig, JwtAuthenticationFilter, InternalServiceAuthFilter, AuthUserArgumentResolver는 Gateway에서 사용하지 않으므로 제외
                 @ComponentScan.Filter(
                         type = FilterType.REGEX,
-                        pattern = "com\\.thock\\.back\\.global\\.security\\.(SecurityConfig|JwtAuthenticationFilter)"
+                        pattern = "com\\.thock\\.back\\.global\\.security\\.(SecurityConfig|JwtAuthenticationFilter|InternalServiceAuthFilter|AuthUserArgumentResolver)"
                 )
         }
 )
