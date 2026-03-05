@@ -16,6 +16,23 @@ swagger:
 cors:
   allowed.origins: ${CORS_ALLOWED_ORIGINS:https://thock.site,https://www.thock.site,https://api.thock.site}
 
+# 운영 보안: Swagger는 ingress IP allowlist로 제어 (애플리케이션 레벨은 활성 유지)
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
+
+# 운영 보안: Actuator 노출 최소화
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: never
+
 # 운영 환경 로깅
 logging:
   level:
