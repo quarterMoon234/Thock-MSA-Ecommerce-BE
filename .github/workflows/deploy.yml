@@ -44,9 +44,8 @@ jobs:
           file: api-gateway/Dockerfile
           platforms: linux/amd64
           push: true
-          # CHANGED: latest + SHA 태그 동시 푸시
+          # SHA 태그만 푸시 (latest 태그 사용 금지)
           tags: |
-            sang234/api-gateway:latest
             sang234/api-gateway:${{ env.IMAGE_TAG }}
 
       - name: Build and Push member-service
@@ -56,9 +55,7 @@ jobs:
           file: member-service/Dockerfile
           platforms: linux/amd64
           push: true
-          # CHANGED
           tags: |
-            sang234/member-service:latest
             sang234/member-service:${{ env.IMAGE_TAG }}
 
       - name: Build and Push product-service
@@ -68,9 +65,7 @@ jobs:
           file: product-service/Dockerfile
           platforms: linux/amd64
           push: true
-          # CHANGED
           tags: |
-            sang234/product-service:latest
             sang234/product-service:${{ env.IMAGE_TAG }}
 
       - name: Build and Push market-service
@@ -80,9 +75,7 @@ jobs:
           file: market-service/Dockerfile
           platforms: linux/amd64
           push: true
-          # CHANGED
           tags: |
-            sang234/market-service:latest
             sang234/market-service:${{ env.IMAGE_TAG }}
 
       - name: Build and Push payment-service
@@ -92,9 +85,7 @@ jobs:
           file: payment-service/Dockerfile
           platforms: linux/amd64
           push: true
-          # CHANGED
           tags: |
-            sang234/payment-service:latest
             sang234/payment-service:${{ env.IMAGE_TAG }}
 
       - name: Build and Push settlement-service
@@ -104,9 +95,7 @@ jobs:
           file: settlement-service/Dockerfile
           platforms: linux/amd64
           push: true
-          # CHANGED
           tags: |
-            sang234/settlement-service:latest
             sang234/settlement-service:${{ env.IMAGE_TAG }}
 
   deploy:
@@ -144,10 +133,10 @@ jobs:
           ssh ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << EOF
             set -e
 
-            # CHANGED: docker compose down으로 충돌 방지 (최초 1회성 안전장치)
+            # docker compose down으로 충돌 방지 (최초 1회성 안전장치)
             cd ~/deploy 2>/dev/null && docker compose -f docker-compose.yml down || true
 
-            # CHANGED: Docker Compose 대신 K3s deployment image 교체
+            # Docker Compose 대신 K3s deployment image 교체
             sudo k3s kubectl -n thock-prod set image deployment/api-gateway api-gateway=sang234/api-gateway:${IMAGE_TAG}
             sudo k3s kubectl -n thock-prod set image deployment/member-service member-service=sang234/member-service:${IMAGE_TAG}
             sudo k3s kubectl -n thock-prod set image deployment/product-service product-service=sang234/product-service:${IMAGE_TAG}
@@ -155,11 +144,15 @@ jobs:
             sudo k3s kubectl -n thock-prod set image deployment/payment-service payment-service=sang234/payment-service:${IMAGE_TAG}
             sudo k3s kubectl -n thock-prod set image deployment/settlement-service settlement-service=sang234/settlement-service:${IMAGE_TAG}
 
-            # CHANGED: rollout 완료 확인
+            # rollout 완료 확인
             sudo k3s kubectl -n thock-prod rollout status deployment/api-gateway --timeout=300s
             sudo k3s kubectl -n thock-prod rollout status deployment/member-service --timeout=300s
             sudo k3s kubectl -n thock-prod rollout status deployment/product-service --timeout=300s
             sudo k3s kubectl -n thock-prod rollout status deployment/market-service --timeout=300s
             sudo k3s kubectl -n thock-prod rollout status deployment/payment-service --timeout=300s
             sudo k3s kubectl -n thock-prod rollout status deployment/settlement-service --timeout=300s
+          
+            # 배포 후 태그 검증 로그
+            sudo k3s kubectl -n thock-prod get deploy api-gateway member-service product-service market-service payment-service settlement-service \
+              -o=jsonpath='{range .items[*]}{.metadata.name}{" => "}{.spec.template.spec.containers[0].image}{"\n"}{end}' 
           EOF
