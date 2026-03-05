@@ -151,7 +151,34 @@ jobs:
             sudo k3s kubectl -n thock-prod rollout status deployment/market-service --timeout=300s
             sudo k3s kubectl -n thock-prod rollout status deployment/payment-service --timeout=300s
             sudo k3s kubectl -n thock-prod rollout status deployment/settlement-service --timeout=300s
-          
+
+            # 스모크 테스트 1: Pod Ready 확인
+            sudo k3s kubectl -n thock-prod wait --for=condition=ready pod -l app=api-gateway --timeout=180s
+            sudo k3s kubectl -n thock-prod wait --for=condition=ready pod -l app=member-service --timeout=180s
+            sudo k3s kubectl -n thock-prod wait --for=condition=ready pod -l app=product-service --timeout=180s
+            sudo k3s kubectl -n thock-prod wait --for=condition=ready pod -l app=market-service --timeout=180s
+            sudo k3s kubectl -n thock-prod wait --for=condition=ready pod -l app=payment-service --timeout=180s
+            sudo k3s kubectl -n thock-prod wait --for=condition=ready pod -l app=settlement-service --timeout=180s
+
+            # 스모크 테스트 2: 내부 헬스체크 호출
+            sudo k3s kubectl -n thock-prod exec deploy/api-gateway -- sh -lc 'wget -qO- http://member-service:8081/actuator/health' >/dev/null
+            sudo k3s kubectl -n thock-prod exec deploy/api-gateway -- sh -lc 'wget -qO- http://product-service:8082/actuator/health' >/dev/null
+            sudo k3s kubectl -n thock-prod exec deploy/api-gateway -- sh -lc 'wget -qO- http://market-service:8083/actuator/health' >/dev/null
+            sudo k3s kubectl -n thock-prod exec deploy/api-gateway -- sh -lc 'wget -qO- http://payment-service:8084/actuator/health' >/dev/null
+            sudo k3s kubectl -n thock-prod exec deploy/api-gateway -- sh -lc 'wget -qO- http://settlement-service:8085/actuator/health' >/dev/null
+
+            # 스모크 테스트 3: 이미지 태그 검증 (latest 방지)
+            for svc in api-gateway member-service product-service market-service payment-service settlement-service; do
+              actual_image=\$(sudo k3s kubectl -n thock-prod get deploy "\$svc" -o jsonpath='{.spec.template.spec.containers[0].image}')
+              expected_image="sang234/\$svc:${IMAGE_TAG}"
+              if [ "\$actual_image" != "\$expected_image" ]; then
+                echo "[ERROR] image tag mismatch for \$svc"
+                echo "  expected: \$expected_image"
+                echo "  actual  : \$actual_image"
+                exit 1
+              fi
+            done
+
             # 배포 후 태그 검증 로그
             sudo k3s kubectl -n thock-prod get deploy api-gateway member-service product-service market-service payment-service settlement-service \
               -o=jsonpath='{range .items[*]}{.metadata.name}{" => "}{.spec.template.spec.containers[0].image}{"\n"}{end}' 
