@@ -12,3 +12,10 @@ swagger:
   server:
     url: http://localhost:8080
     description: Local API Gateway
+
+# 로컬에서는 환경 변수 대신 application-local.yml에 JWT 시크릿 키를 직접 설정
+jwt:
+  secret: thock-local-jwt-secret-key-which-is-long-enough-32chars
+  access-token-exp-seconds: 1800
+  refresh-token-exp-seconds: 1209600
+  issuer: thock-local
