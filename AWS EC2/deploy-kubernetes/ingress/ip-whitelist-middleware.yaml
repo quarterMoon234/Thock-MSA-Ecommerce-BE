@@ -7,4 +7,5 @@ spec:
   ipAllowList:
     sourceRange:
       - 220.79.119.124/32
+      - 114.201.89.57/32
 
