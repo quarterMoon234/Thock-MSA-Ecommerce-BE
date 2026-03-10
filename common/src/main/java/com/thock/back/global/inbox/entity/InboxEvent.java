@@ -8,7 +8,7 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "INBOX_EVENT", uniqueConstraints = {
+@Table(name = "inbox_event", uniqueConstraints = {
         @UniqueConstraint(
                 name = "uk_inbox_idempotency_key_consumer_group",
                 columnNames = {"idempotencyKey", "consumerGroup"}
