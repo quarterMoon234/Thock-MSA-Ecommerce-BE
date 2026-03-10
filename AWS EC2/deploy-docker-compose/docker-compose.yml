@@ -1,7 +1,7 @@
   services:
     # ==================== API Gateway (외부 진입점) ====================
     api-gateway:
-      image: sang234/api-gateway:${IMAGE_TAG}
+      image: sang234/api-gateway:${API_GATEWAY_IMAGE_TAG:?required}
       container_name: api-gateway
       expose:
         - "8080"
@@ -36,7 +36,7 @@
 
     # ==================== Application Services ====================
     member-service:
-      image: sang234/member-service:${IMAGE_TAG}
+      image: sang234/member-service:${MEMBER_SERVICE_IMAGE_TAG:?required}
       container_name: member-service
       expose:
         - "8081"
@@ -65,7 +65,7 @@
       restart: unless-stopped
 
     product-service:
-      image: sang234/product-service:${IMAGE_TAG}
+      image: sang234/product-service:${PRODUCT_SERVICE_IMAGE_TAG:?required}
       container_name: product-service
       expose:
         - "8082"
@@ -94,7 +94,7 @@
       restart: unless-stopped
 
     market-service:
-      image: sang234/market-service:${IMAGE_TAG}
+      image: sang234/market-service:${MARKET_SERVICE_IMAGE_TAG:?required}
       container_name: market-service
       expose:
         - "8083"
@@ -129,7 +129,7 @@
       restart: unless-stopped
 
     payment-service:
-      image: sang234/payment-service:${IMAGE_TAG}
+      image: sang234/payment-service:${PAYMENT_SERVICE_IMAGE_TAG:?required}
       container_name: payment-service
       expose:
         - "8084"
@@ -158,7 +158,7 @@
       restart: unless-stopped
 
     settlement-service:
-      image: sang234/settlement-service:${IMAGE_TAG}
+      image: sang234/settlement-service:${SETTLEMENT_SERVICE_IMAGE_TAG:?required}
       container_name: settlement-service
       expose:
         - "8085"
