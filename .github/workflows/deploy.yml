@@ -5,28 +5,133 @@ on:
     branches: ["main", "dev"]
     types: [ closed ]
 
+permissions:
+  contents: read
+  pull-requests: read
+
 jobs:
+  detect-changes:
+    runs-on: ubuntu-latest
+
+    outputs:
+      any_changed: ${{ steps.filter.outputs.any_changed }}
+      services_json: ${{ steps.filter.outputs.services_json }}
+      services_space: ${{ steps.filter.outputs.services_space }}
+
+    steps:
+      - name: Determine changed services
+        id: filter
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const services = [
+              'api-gateway',
+              'member-service',
+              'product-service',
+              'market-service',
+              'payment-service',
+              'settlement-service',
+            ];
+
+            const setDefaultOutputs = (selectedServices) => {
+              core.setOutput('any_changed', selectedServices.length > 0 ? 'true' : 'false');
+              core.setOutput('services_json', JSON.stringify(selectedServices));
+              core.setOutput('services_space', selectedServices.join(' '));
+            };
+
+            const pr = context.payload.pull_request;
+            if (!pr.merged) {
+              core.info('Pull request was closed without merge. Skipping build and deploy.');
+              setDefaultOutputs([]);
+              return;
+            }
+
+            const files = await github.paginate(github.rest.pulls.listFiles, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: pr.number,
+              per_page: 100,
+            });
+
+            const changedFiles = files.map((file) => file.filename);
+            core.info(`Changed files (${changedFiles.length}):\n${changedFiles.join('\n')}`);
+
+            const servicePaths = {
+              'api-gateway': ['api-gateway/'],
+              'member-service': ['member-service/'],
+              'product-service': ['product-service/'],
+              'market-service': ['market-service/'],
+              'payment-service': ['payment-service/'],
+              'settlement-service': ['settlement-service/'],
+            };
+
+            const globalPrefixes = [
+              'common/',
+              'gradle/',
+              'buildSrc/',
+            ];
+
+            const globalFiles = new Set([
+              'settings.gradle',
+              'settings.gradle.kts',
+              'build.gradle',
+              'build.gradle.kts',
+              'gradle.properties',
+              'gradlew',
+              'gradlew.bat',
+            ]);
+
+            const impacted = new Set();
+            const impactsAllServices = changedFiles.some((file) => {
+              if (globalFiles.has(file)) {
+                return true;
+              }
+
+              return globalPrefixes.some((prefix) => file.startsWith(prefix));
+            });
+
+            if (impactsAllServices) {
+              services.forEach((service) => impacted.add(service));
+            }
+
+            for (const [service, prefixes] of Object.entries(servicePaths)) {
+              const isChanged = changedFiles.some((file) =>
+                prefixes.some((prefix) => file.startsWith(prefix))
+              );
+
+              if (isChanged) {
+                impacted.add(service);
+              }
+            }
+
+            const selectedServices = services.filter((service) => impacted.has(service));
+            core.info(
+              selectedServices.length > 0
+                ? `Impacted services: ${selectedServices.join(', ')}`
+                : 'No service image changes detected.'
+            );
+
+            setDefaultOutputs(selectedServices);
+
   build-and-push:
     runs-on: ubuntu-latest
-    if: github.event.pull_request.merged == true
+    needs: detect-changes
+    if: github.event.pull_request.merged == true && needs.detect-changes.outputs.any_changed == 'true'
 
     # CHANGED: merge된 PR의 커밋 SHA를 이미지 태그로 사용
     env:
       IMAGE_TAG: ${{ github.event.pull_request.merge_commit_sha }}
 
+    strategy:
+      fail-fast: false
+      matrix:
+        service: ${{ fromJson(needs.detect-changes.outputs.services_json) }}
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
         with:
-          distribution: "temurin"
-          java-version: "17"
-          cache: "gradle"
-
-      - name: Grant execute permission for gradlew
-        run: chmod +x ./gradlew
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -37,74 +142,25 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Build and Push api-gateway
+      - name: Build and Push ${{ matrix.service }}
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: api-gateway/Dockerfile
-          platforms: linux/amd64
-          push: true
-          # SHA 태그만 푸시 (latest 태그 사용 금지)
-          tags: |
-            sang234/api-gateway:${{ env.IMAGE_TAG }}
-
-      - name: Build and Push member-service
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: member-service/Dockerfile
+          file: ${{ matrix.service }}/Dockerfile
           platforms: linux/amd64
           push: true
           tags: |
-            sang234/member-service:${{ env.IMAGE_TAG }}
-
-      - name: Build and Push product-service
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: product-service/Dockerfile
-          platforms: linux/amd64
-          push: true
-          tags: |
-            sang234/product-service:${{ env.IMAGE_TAG }}
-
-      - name: Build and Push market-service
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: market-service/Dockerfile
-          platforms: linux/amd64
-          push: true
-          tags: |
-            sang234/market-service:${{ env.IMAGE_TAG }}
-
-      - name: Build and Push payment-service
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: payment-service/Dockerfile
-          platforms: linux/amd64
-          push: true
-          tags: |
-            sang234/payment-service:${{ env.IMAGE_TAG }}
-
-      - name: Build and Push settlement-service
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: settlement-service/Dockerfile
-          platforms: linux/amd64
-          push: true
-          tags: |
-            sang234/settlement-service:${{ env.IMAGE_TAG }}
+            sang234/${{ matrix.service }}:${{ env.IMAGE_TAG }}
 
   deploy:
     runs-on: ubuntu-latest
-    needs: build-and-push
+    needs: [detect-changes, build-and-push]
+    if: github.event.pull_request.merged == true && needs.detect-changes.outputs.any_changed == 'true'
 
     # CHANGED: deploy job에서도 동일 태그 사용
     env:
       IMAGE_TAG: ${{ github.event.pull_request.merge_commit_sha }}
+      CHANGED_SERVICES: ${{ needs.detect-changes.outputs.services_space }}
 
     steps:
       - name: Load SSH key
@@ -117,69 +173,56 @@ jobs:
           mkdir -p ~/.ssh
           ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
 
-#      Docker Compose를 사용허는 경우, EC2에서 이미지를 pull하고 컨테이너를 재시작하는 명령을 실행
-#      - name: Deploy to EC2 with Docker Compose
-#        run: |
-#          ssh ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
-#            cd ~/deploy
-#            docker compose -f docker-compose.yml pull
-#            docker compose -f docker-compose.yml up -d
-#            docker exec nginx nginx -s reload
-#          EOF
-
-      # K3s를 사용하는 경우, EC2에서 kubectl set image 명령으로 deployment의 이미지를 업데이트하고 롤아웃 상태를 확인하는 명령을 실행
       - name: Deploy to EC2 with K3s
         run: |
           ssh ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << EOF
             set -e
 
+            CHANGED_SERVICES="${CHANGED_SERVICES}"
+            IMAGE_TAG="${IMAGE_TAG}"
+
+            if [ -z "\$CHANGED_SERVICES" ]; then
+              echo "No service image changes detected."
+              exit 0
+            fi
+
             # docker compose down으로 충돌 방지 (최초 1회성 안전장치)
             cd ~/deploy 2>/dev/null && docker compose -f docker-compose.yml down || true
 
-            # Docker Compose 대신 K3s deployment image 교체
-            sudo k3s kubectl -n thock-prod set image deployment/api-gateway api-gateway=sang234/api-gateway:${IMAGE_TAG}
-            sudo k3s kubectl -n thock-prod set image deployment/member-service member-service=sang234/member-service:${IMAGE_TAG}
-            sudo k3s kubectl -n thock-prod set image deployment/product-service product-service=sang234/product-service:${IMAGE_TAG}
-            sudo k3s kubectl -n thock-prod set image deployment/market-service market-service=sang234/market-service:${IMAGE_TAG}
-            sudo k3s kubectl -n thock-prod set image deployment/payment-service payment-service=sang234/payment-service:${IMAGE_TAG}
-            sudo k3s kubectl -n thock-prod set image deployment/settlement-service settlement-service=sang234/settlement-service:${IMAGE_TAG}
+            # 변경된 서비스만 image 교체
+            for svc in \$CHANGED_SERVICES; do
+              sudo k3s kubectl -n thock-prod set image deployment/\$svc \$svc=sang234/\$svc:\${IMAGE_TAG}
+            done
 
-            # rollout 완료 확인
-            sudo k3s kubectl -n thock-prod rollout status deployment/api-gateway --timeout=300s
-            sudo k3s kubectl -n thock-prod rollout status deployment/member-service --timeout=300s
-            sudo k3s kubectl -n thock-prod rollout status deployment/product-service --timeout=300s
-            sudo k3s kubectl -n thock-prod rollout status deployment/market-service --timeout=300s
-            sudo k3s kubectl -n thock-prod rollout status deployment/payment-service --timeout=300s
-            sudo k3s kubectl -n thock-prod rollout status deployment/settlement-service --timeout=300s
+            # rollout, health, 태그 검증
+            for svc in \$CHANGED_SERVICES; do
+              sudo k3s kubectl -n thock-prod rollout status deployment/\$svc --timeout=300s
+              sudo k3s kubectl -n thock-prod wait --for=condition=ready pod -l app=\$svc --timeout=180s
 
-            # 스모크 테스트 1: Pod Ready 확인
-            sudo k3s kubectl -n thock-prod wait --for=condition=ready pod -l app=api-gateway --timeout=180s
-            sudo k3s kubectl -n thock-prod wait --for=condition=ready pod -l app=member-service --timeout=180s
-            sudo k3s kubectl -n thock-prod wait --for=condition=ready pod -l app=product-service --timeout=180s
-            sudo k3s kubectl -n thock-prod wait --for=condition=ready pod -l app=market-service --timeout=180s
-            sudo k3s kubectl -n thock-prod wait --for=condition=ready pod -l app=payment-service --timeout=180s
-            sudo k3s kubectl -n thock-prod wait --for=condition=ready pod -l app=settlement-service --timeout=180s
+              case "\$svc" in
+                api-gateway) port=8080 ;;
+                member-service) port=8081 ;;
+                product-service) port=8082 ;;
+                market-service) port=8083 ;;
+                payment-service) port=8084 ;;
+                settlement-service) port=8085 ;;
+                *)
+                  echo "[ERROR] unknown service: \$svc"
+                  exit 1
+                  ;;
+              esac
 
-            # 스모크 테스트 2: 내부 헬스체크 호출
-            sudo k3s kubectl -n thock-prod exec deploy/api-gateway -- sh -lc 'wget -qO- http://member-service:8081/actuator/health' >/dev/null
-            sudo k3s kubectl -n thock-prod exec deploy/api-gateway -- sh -lc 'wget -qO- http://product-service:8082/actuator/health' >/dev/null
-            sudo k3s kubectl -n thock-prod exec deploy/api-gateway -- sh -lc 'wget -qO- http://market-service:8083/actuator/health' >/dev/null
-            sudo k3s kubectl -n thock-prod exec deploy/api-gateway -- sh -lc 'wget -qO- http://payment-service:8084/actuator/health' >/dev/null
-            sudo k3s kubectl -n thock-prod exec deploy/api-gateway -- sh -lc 'wget -qO- http://settlement-service:8085/actuator/health' >/dev/null
+              sudo k3s kubectl -n thock-prod exec deploy/\$svc -- sh -lc "wget -qO- http://127.0.0.1:\$port/actuator/health" >/dev/null
 
-            # 스모크 테스트 3: 이미지 태그 검증 (latest 방지)
-            for svc in api-gateway member-service product-service market-service payment-service settlement-service; do
               actual_image=\$(sudo k3s kubectl -n thock-prod get deploy "\$svc" -o jsonpath='{.spec.template.spec.containers[0].image}')
-              expected_image="sang234/\$svc:${IMAGE_TAG}"
+              expected_image="sang234/\$svc:\${IMAGE_TAG}"
               if [ "\$actual_image" != "\$expected_image" ]; then
                 echo "[ERROR] image tag mismatch for \$svc"
                 echo "  expected: \$expected_image"
                 echo "  actual  : \$actual_image"
                 exit 1
               fi
-            done
 
-            # 배포 후 태그 검증 로그
-            sudo k3s kubectl -n thock-prod get deploy api-gateway member-service product-service market-service payment-service settlement-service \
-              -o=jsonpath='{range .items[*]}{.metadata.name}{" => "}{.spec.template.spec.containers[0].image}{"\n"}{end}' 
+              echo "\$svc => \$actual_image"
+            done
           EOF
