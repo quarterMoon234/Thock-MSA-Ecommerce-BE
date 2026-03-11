@@ -42,6 +42,21 @@ public class ApiV1PaymentController {
     }
 
     @Operation(
+            summary = "지갑 조회 (외부 API)",
+            description = "현재 로그인한 사용자의 지갑 정보를 조회합니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "지갑 조회 성공"),
+            @ApiResponse(responseCode = "401", description = "인증되지 않은 사용자"),
+            @ApiResponse(responseCode = "404", description = "WALLET-404-1: 지갑을 찾을 수 없습니다. / WALLET-404-2: 이 지갑은 현재 정지 된 상태입니다.")
+    })
+    @GetMapping("/wallet/me")
+    public ResponseEntity<WalletDto> getMyWallet(@AuthUser AuthenticatedUser user) {
+        Long memberId = user.memberId();
+        log.info("Payment API : getMyWallet / memberId = {}", memberId);
+        return ResponseEntity.ok().body(paymentFacade.walletFindByMemberId(memberId));
+    }
+
+    @Operation(
             summary = "지갑 잔액 입출금 로그 조회",
             description = "사용자의 지갑 잔액 입출금 로그를 조회합니다. 지갑 잔액 입출금 로그를 반환합니다.")
     @ApiResponses({
