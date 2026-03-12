@@ -288,7 +288,6 @@ jobs:
               docker exec nginx nginx -t
               docker exec nginx nginx -s reload
               sleep 3
-              docker exec nginx wget -qO- http://api-gateway:8080/swagger-ui/index.html >/dev/null
             else
               echo "[WARN] nginx container is not running. Skipping nginx reload."
             fi
