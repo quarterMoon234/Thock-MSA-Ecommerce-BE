@@ -5,15 +5,10 @@ spring:
   application:
     name: settlement-service
 
-  profiles:
-    active: local
-
   jackson:
     time-zone: Asia/Seoul
 
   jpa:
-    hibernate:
-      ddl-auto: update
     show-sql: true
     properties:
       hibernate:
@@ -33,7 +28,7 @@ slack:
 
 # JWT 설정
 jwt:
-  secret: ${JWT_SECRET_KEY:thock-2026-backend-authentication-jwt-secret-key-very-very-long-256bit}
+  secret: ${JWT_SECRET_KEY}
   access-token-exp-seconds: 1800
   refresh-token-exp-seconds: 1209600
   issuer: "thock"

@@ -1,5 +1,4 @@
 spring:
-
   kafka:
     bootstrap-servers: localhost:9092
 
@@ -8,12 +7,9 @@ spring:
     username: root
     password: root
 
-# Local JWT fallback
-jwt:
-  secret: thock-local-jwt-secret-key-which-is-long-enough-32chars
-  access-token-exp-seconds: 1800
-  refresh-token-exp-seconds: 1209600
-  issuer: "thock-local"
+  jpa:
+    hibernate:
+      ddl-auto: update
 
 # 다른 서비스 URL (Local 환경)
 custom:

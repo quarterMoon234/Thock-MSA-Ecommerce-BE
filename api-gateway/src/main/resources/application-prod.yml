@@ -2,9 +2,14 @@
 # Production 환경 (AWS EC2)
 # ============================================
 
-# Production에서도 Docker Compose로 배포되므로
-# application.yml의 기본값 (Docker 서비스 이름) 사용
-# 또는 필요시 환경변수로 오버라이드 가능
+# Production에서도 Docker Compose 기반 주소를 사용하되
+# 필요시 환경변수로 각 서비스 URL을 명시적으로 오버라이드 가능
+service-endpoints:
+  member: ${MEMBER_SERVICE_URL:http://member-service:8081}
+  product: ${PRODUCT_SERVICE_URL:http://product-service:8082}
+  market: ${MARKET_SERVICE_URL:http://market-service:8083}
+  payment: ${PAYMENT_SERVICE_URL:http://payment-service:8084}
+  settlement: ${SETTLEMENT_SERVICE_URL:http://settlement-service:8085}
 
 # Swagger Production 설정
 swagger:
