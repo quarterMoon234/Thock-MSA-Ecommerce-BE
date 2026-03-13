@@ -8,14 +8,14 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "inbox_event", uniqueConstraints = {
+@Table(name = "product_inbox_event", uniqueConstraints = {
         @UniqueConstraint(
-                name = "uk_inbox_idempotency_key_consumer_group",
+                name = "uk_product_inbox_event_idempotency_key_consumer_group",
                 columnNames = {"idempotencyKey", "consumerGroup"}
         )
 }, indexes = {
-        @Index(name = "idx_inbox_topic_consumer_group", columnList = "topic, consumerGroup"),
-        @Index(name = "idx_inbox_created_at", columnList = "createdAt")
+        @Index(name = "idx_product_inbox_event_topic_consumer_group", columnList = "topic, consumerGroup"),
+        @Index(name = "idx_product_inbox_event_created_at", columnList = "createdAt")
 })
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)

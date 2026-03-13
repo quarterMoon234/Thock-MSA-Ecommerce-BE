@@ -1,76 +1,41 @@
-name: 🐛 Bug Report
-description: 버그 수정 이슈
-title: "[FIX] "
+name: Bug Report
+description: 버그 이슈
+title: "[BUG] "
 labels: ["bug"]
 body:
-  - type: textarea
-    id: description
+  - type: markdown
     attributes:
-      label: 🐛 버그 설명
-      description: 버그에 대한 명확하고 간결한 설명을 작성해주세요.
-      placeholder: 예) 회원가입(USER-001) API 호출 시 500 에러 발생
-    validations:
-      required: true
+      value: |
+        길게 적지 않아도 됩니다.
+        어디서 문제가 났는지, 무엇을 고치면 끝나는지만 적어주세요.
 
-  - type: dropdown
-    id: severity
+  - type: textarea
+    id: problem
     attributes:
-      label: ⚠️ 심각도
-      description: 버그의 심각도를 선택해주세요.
-      options:
-        - Critical (서비스 중단)
-        - High (주요 기능 불가)
-        - Medium (일부 기능 이상)
-        - Low (사소한 문제)
+      label: 문제 상황
+      description: 어디서 어떤 문제가 발생했는지 한두 문장으로 작성해주세요.
+      placeholder: 예) 상품 수정 API 호출 시 500 에러가 발생합니다.
     validations:
       required: true
 
   - type: textarea
-    id: reproduce
+    id: done-criteria
     attributes:
-      label: 🔄 재현 방법
-      description: 버그를 재현하는 단계를 작성해주세요.
+      label: 해결 기준
+      description: 수정 후 어떤 상태가 되면 완료인지 적어주세요.
       placeholder: |
-        1. API 호출
-        2. 특정 파라미터 전달
-        3. 에러 발생 확인
+        - 상품 수정 요청이 정상 응답을 반환한다.
+        - 동일 케이스로 재호출해도 에러가 발생하지 않는다.
     validations:
       required: true
 
   - type: textarea
-    id: expected
+    id: note
     attributes:
-      label: 💡 예상 동작
-      description: 어떻게 동작해야 하는지 설명해주세요.
-      placeholder: 정상적으로 회원가입이 완료되어야 합니다.
-    validations:
-      required: false
-
-  - type: textarea
-    id: actual
-    attributes:
-      label: ❌ 실제 동작
-      description: 실제로 어떻게 동작하는지 설명해주세요.
-      placeholder: 500 Internal Server Error가 발생합니다.
-    validations:
-      required: false
-
-  - type: textarea
-    id: error-log
-    attributes:
-      label: 📋 에러 로그
-      description: 에러 로그나 스택 트레이스를 붙여넣어주세요.
+      label: 참고 메모
+      description: 재현 방법, 에러 로그, 원인 추정 등 필요한 정보만 선택해서 적어주세요.
       placeholder: |
-        java.lang.NullPointerException: ...
-        at com.thock.backend.api...
-      render: bash
-    validations:
-      required: false
-
-  - type: textarea
-    id: additional
-    attributes:
-      label: 📝 추가 정보
-      description: 기타 버그와 관련된 추가 정보가 있다면 작성해주세요.
+        - 재현: 관리자 권한 없이 수정 요청 시 발생
+        - 로그: IllegalArgumentException ...
     validations:
       required: false

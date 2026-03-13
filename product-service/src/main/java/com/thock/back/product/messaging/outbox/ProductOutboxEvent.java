@@ -9,7 +9,7 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "product_outbox_event", indexes = {
-        @Index(name = "idx_product_outbox_status_created", columnList = "status, createdAt")
+        @Index(name = "idx_product_outbox_event_status_created_at", columnList = "status, createdAt")
 })
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)

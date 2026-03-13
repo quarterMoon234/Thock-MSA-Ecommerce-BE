@@ -10,7 +10,7 @@ public interface ProductInboxEventRepository extends JpaRepository<ProductInboxE
     @Modifying
     @Query(
             value = """
-                    INSERT IGNORE INTO inbox_event
+                    INSERT IGNORE INTO product_inbox_event
                     (idempotency_key, topic, consumer_group, created_at)
                     VALUES (:idempotencyKey, :topic, :consumerGroup, NOW(6))
                     """,

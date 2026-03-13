@@ -8,6 +8,7 @@ jobs:
   label:
     runs-on: ubuntu-latest
     permissions:
+      issues: write
       pull-requests: write
     steps:
       - name: Auto label PR
@@ -16,45 +17,70 @@ jobs:
           script: |
             const title = context.payload.pull_request.title;
             const labels = [];
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
             
             // PR 제목에서 TYPE 추출
             // [TYPE] #이슈번호 작업요약
-            const match = title.match(/^\[(FEAT|FIX|DOCS|STYLE|REFACTOR|TEST|CHORE|COMMENT|RENAME|REMOVE|HOTFIX)\]/);
+            const match = title.match(/^\[(BUG|FEAT|TASK|TEST)\]/);
             
             if (match) {
               const type = match[1].toLowerCase();
             
               // TYPE에 따른 라벨 매핑
               const labelMap = {
-                'feat': 'enhancement',
-                'fix': 'bug',
-                'docs': 'documentation',
-                'style': 'style',
-                'refactor': 'refactoring',
-                'test': 'test',
-                'chore': 'chore',
-                'comment': 'documentation',
-                'rename': 'refactoring',
-                'remove': 'refactoring',
-                'hotfix': 'bug'
+                'bug': 'bug',
+                'feat': 'feat',
+                'task': 'task',
+                'test': 'test'
+              };
+
+              const labelConfigs = {
+                'bug': { color: 'd73a4a', description: 'Bug fixes' },
+                'feat': { color: 'a2eeef', description: 'New features' },
+                'task': { color: '7057ff', description: 'General tasks' },
+                'test': { color: '1d76db', description: 'Testing work' }
               };
             
               if (labelMap[type]) {
-                labels.push(labelMap[type]);
+                const labelName = labelMap[type];
+                const labelConfig = labelConfigs[labelName];
+
+                try {
+                  await github.rest.issues.getLabel({
+                    owner,
+                    repo,
+                    name: labelName
+                  });
+                } catch (error) {
+                  if (error.status === 404) {
+                    await github.rest.issues.createLabel({
+                      owner,
+                      repo,
+                      name: labelName,
+                      color: labelConfig.color,
+                      description: labelConfig.description
+                    });
+                  } else {
+                    throw error;
+                  }
+                }
+
+                labels.push(labelName);
               }
             }
             
             // 라벨 추가
             if (labels.length > 0) {
               await github.rest.issues.addLabels({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
+                owner,
+                repo,
                 issue_number: context.payload.pull_request.number,
                 labels: labels
               });
             
-              console.log(`✅ 라벨 추가 완료: ${labels.join(', ')}`);
+              console.log(`라벨 추가 완료: ${labels.join(', ')}`);
             } else {
-              console.log('⚠️ PR 제목에서 TYPE을 찾을 수 없습니다.');
+              console.log('PR 제목에서 TYPE을 찾을 수 없습니다.');
               console.log('올바른 형식: [TYPE] #이슈번호 작업요약');
             }

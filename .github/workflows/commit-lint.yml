@@ -22,13 +22,13 @@ jobs:
 
       - name: Validate commit messages
         run: |
-          echo "📝 커밋 메시지 검증 시작..."
+          echo "커밋 메시지 검증 시작..."
           echo ""
           
           # 커밋 메시지 규칙
           # 예) feat: 회원가입 기능 추가
-          # 세미콜론 필수, 띄어쓰기 필수, 설명 1글자 이상 필수
-          REGEX='^(feat|fix|docs|style|refactor|test|chore|comment|rename|remove|hotfix): .{1,}'
+          # 콜론(:) 필수, 띄어쓰기 필수, 설명 1글자 이상 필수
+          REGEX='^(bug|feat|task|test): .{1,}'
           
           # Merge 커밋 패턴 (검증 제외, Git이 자동 생성한 Merge 커밋만 제외)
           MERGE_REGEX='^Merge (pull request|branch|remote-tracking branch)'
@@ -42,48 +42,41 @@ jobs:
             
             # Merge 커밋인지 확인
             if [[ "$commit_msg" =~ $MERGE_REGEX ]]; then
-              echo "  ⏭️  Merge 커밋 (검증 제외)"
+              echo "  Merge 커밋 (검증 제외)"
             elif [[ ! "$commit_msg" =~ $REGEX ]]; then
-              echo "  ❌ 규칙 위반!"
+              echo "  규칙 위반"
               FAIL=1
             else
-              echo "  ✅ 통과"
+              echo "  통과"
             fi
             echo ""
           done < commits.txt
           
           if [ $FAIL -eq 1 ]; then
-            echo "::error::❌ 커밋 메시지가 규칙을 만족하지 않습니다."
+            echo "::error::커밋 메시지가 규칙을 만족하지 않습니다."
             echo ""
-            echo "📌 올바른 형식:"
+            echo "올바른 형식:"
             echo "  type: subject"
             echo ""
-            echo "📝 예시:"
+            echo "예시:"
             echo "  feat: 회원가입 기능 추가"
-            echo "  fix: JWT 토큰 만료 처리 버그 수정"
-            echo "  docs: README 업데이트"
-            echo "  refactor: UserService 리팩토링"
+            echo "  bug: JWT 토큰 만료 처리 버그 수정"
+            echo "  task: UserService 리팩토링"
+            echo "  test: 상품 검색 통합 테스트 추가"
             echo ""
-            echo "🏷️ 사용 가능한 type (소문자):"
+            echo "사용 가능한 type (소문자):"
+            echo "  bug      : 버그 수정"
             echo "  feat     : 새로운 기능 추가"
-            echo "  fix      : 버그 수정"
-            echo "  docs     : 문서 수정"
-            echo "  style    : 코드 포맷팅, 세미콜론 누락 등"
-            echo "  refactor : 코드 리팩토링"
-            echo "  test     : 테스트 코드 추가/수정"
-            echo "  chore    : 빌드, 패키지 관리, 기타 수정"
-            echo "  comment  : 주석 추가 및 변경"
-            echo "  rename   : 파일/폴더명 수정"
-            echo "  remove   : 파일 삭제"
-            echo "  hotfix   : 긴급 버그 수정"
+            echo "  task     : 리팩토링, 문서화, 설정 등 일반 작업"
+            echo "  test     : 테스트 코드 추가/수정, 테스트 환경 개선"
             echo ""
-            echo "📋 규칙:"
+            echo "규칙:"
             echo "  - type: 소문자"
             echo "  - 콜론(:) 뒤에 공백 필수"
             echo "  - subject 1글자 이상 작성 필수"
             echo ""
-            echo "💡 참고: Merge 커밋은 자동으로 검증에서 제외됩니다."
+            echo "참고: Merge 커밋은 자동으로 검증에서 제외됩니다."
             exit 1
           fi
           
-          echo "✅ 모든 커밋 메시지가 규칙을 만족합니다!"
+          echo "모든 커밋 메시지가 규칙을 만족합니다."
