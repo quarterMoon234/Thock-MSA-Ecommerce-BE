@@ -1,5 +1,4 @@
 spring:
-
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS}
 
@@ -7,6 +6,10 @@ spring:
     url: jdbc:mysql://${MYSQL_HOST}:${MYSQL_PORT}/${MYSQL_DATABASE}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul&characterEncoding=UTF-8
     username: ${MYSQL_USER}
     password: ${MYSQL_PASSWORD}
+
+  jpa:
+    hibernate:
+      ddl-auto: update
 
 # 내부 백엔드 URL (Docker)
 custom:

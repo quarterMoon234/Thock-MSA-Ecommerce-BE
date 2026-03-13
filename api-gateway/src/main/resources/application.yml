@@ -6,7 +6,6 @@ server:
     max-header-size: 64KB
 
 spring:
-
   application:
     name: api-gateway
 
@@ -18,35 +17,35 @@ spring:
       routes:
         # 각 서비스의 API Docs 엔드포인트
         - id: member-service-api-docs
-          uri: ${MEMBER_SERVICE_URL:http://member-service:8081}
+          uri: ${service-endpoints.member}
           predicates:
             - Path=/member-service/v3/api-docs
           filters:
             - RewritePath=/member-service/v3/api-docs, /v3/api-docs
 
         - id: product-service-api-docs
-          uri: ${PRODUCT_SERVICE_URL:http://product-service:8082}
+          uri: ${service-endpoints.product}
           predicates:
             - Path=/product-service/v3/api-docs
           filters:
             - RewritePath=/product-service/v3/api-docs, /v3/api-docs
 
         - id: market-service-api-docs
-          uri: ${MARKET_SERVICE_URL:http://market-service:8083}
+          uri: ${service-endpoints.market}
           predicates:
             - Path=/market-service/v3/api-docs
           filters:
             - RewritePath=/market-service/v3/api-docs, /v3/api-docs
 
         - id: payment-service-api-docs
-          uri: ${PAYMENT_SERVICE_URL:http://payment-service:8084}
+          uri: ${service-endpoints.payment}
           predicates:
             - Path=/payment-service/v3/api-docs
           filters:
             - RewritePath=/payment-service/v3/api-docs, /v3/api-docs
 
         - id: settlement-service-api-docs
-          uri: ${SETTLEMENT_SERVICE_URL:http://settlement-service:8085}
+          uri: ${service-endpoints.settlement}
           predicates:
             - Path=/settlement-service/v3/api-docs
           filters:
@@ -54,7 +53,7 @@ spring:
 
         # 1. Member Service (회원, 인증)
         - id: member-service-auth
-          uri: ${MEMBER_SERVICE_URL:http://member-service:8081}
+          uri: ${service-endpoints.member}
           predicates:
             - Path=/api/v1/auth/**
           filters:
@@ -65,7 +64,7 @@ spring:
                   - /api/v1/auth/refresh
 
         - id: member-service-members
-          uri: ${MEMBER_SERVICE_URL:http://member-service:8081}
+          uri: ${service-endpoints.member}
           predicates:
             - Path=/api/v1/members/**
           filters:
@@ -76,7 +75,7 @@ spring:
 
         # 2. Product Service (상품)
         - id: product-service
-          uri: ${PRODUCT_SERVICE_URL:http://product-service:8082}
+          uri: ${service-endpoints.product}
           predicates:
             - Path=/api/v1/products/**
           filters:
@@ -91,7 +90,7 @@ spring:
 
         # 3. Market Service (장바구니, 주문)
         - id: market-service
-          uri: ${MARKET_SERVICE_URL:http://market-service:8083}
+          uri: ${service-endpoints.market}
           predicates:
             - Path=/api/v1/carts/**,/api/v1/orders/**
           filters:
@@ -99,7 +98,7 @@ spring:
 
         # 4. Payment Service (결제, 지갑)
         - id: payment-service
-          uri: ${PAYMENT_SERVICE_URL:http://payment-service:8084}
+          uri: ${service-endpoints.payment}
           predicates:
             - Path=/api/v1/payments/**
           filters:
@@ -110,7 +109,7 @@ spring:
 
         # 5. Settlement Service (정산)
         - id: settlement-service
-          uri: ${SETTLEMENT_SERVICE_URL:http://settlement-service:8085}
+          uri: ${service-endpoints.settlement}
           predicates:
             - Path=/api/v1/settlements/**
           filters:
