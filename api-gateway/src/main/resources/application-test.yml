@@ -1,8 +1,7 @@
 # ============================================
-# Local 환경 (IDE 직접 실행)
+# Test 환경
 # ============================================
 
-# Local 환경에서는 각 서비스가 localhost:808X에서 실행됨
 service-endpoints:
   member: ${MEMBER_SERVICE_URL:http://localhost:8081}
   product: ${PRODUCT_SERVICE_URL:http://localhost:8082}
@@ -10,12 +9,11 @@ service-endpoints:
   payment: ${PAYMENT_SERVICE_URL:http://localhost:8084}
   settlement: ${SETTLEMENT_SERVICE_URL:http://localhost:8085}
 
-# Swagger Local 설정
-swagger:
-  server:
-    url: http://localhost:8080
-    description: Local API Gateway
-
-# CORS Local 설정
 cors:
-  allowed.origins: http://localhost:8080
+  allowed.origins: http://localhost:3000,http://localhost:8080
+
+jwt:
+  secret: thock-gateway-test-jwt-secret-key-which-is-long-enough-32chars
+  access-token-exp-seconds: 1800
+  refresh-token-exp-seconds: 1209600
+  issuer: "thock-test"
