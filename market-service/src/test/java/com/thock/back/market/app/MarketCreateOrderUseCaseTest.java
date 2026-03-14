@@ -2,9 +2,12 @@ package com.thock.back.market.app;
 
 import com.thock.back.global.exception.CustomException;
 import com.thock.back.global.exception.ErrorCode;
+import com.thock.back.market.domain.Cart;
+import com.thock.back.market.domain.CartItem;
 import com.thock.back.market.domain.MarketMember;
 import com.thock.back.market.domain.OrderState;
 import com.thock.back.market.in.dto.req.OrderCreateRequest;
+import com.thock.back.market.out.api.dto.ProductInfo;
 import com.thock.back.market.out.repository.CartRepository;
 import com.thock.back.market.out.repository.MarketMemberRepository;
 import com.thock.back.market.out.repository.OrderRepository;
@@ -15,7 +18,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 
+import com.thock.back.shared.member.domain.MemberRole;
+import com.thock.back.shared.member.domain.MemberState;
+
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -168,6 +176,59 @@ class MarketCreateOrderUseCaseTest {
 
             // 주문 존재 여부 체크도 호출되지 않아야 함
             verify(orderRepository, never()).existsByBuyerIdAndState(any(), any());
+        }
+    }
+
+    @Nested
+    @DisplayName("주문 가능 재고 검증 테스트")
+    class AvailableStockValidationTest {
+
+        @Test
+        @DisplayName("예약 재고를 제외한 주문 가능 재고보다 많이 주문하면 예외가 발생한다")
+        void createOrder_reservedStockIncluded_throwsOutOfStock() {
+            Long memberId = 1L;
+            MarketMember actualBuyer = new MarketMember(
+                    "buyer@test.com",
+                    "buyer",
+                    MemberRole.USER,
+                    MemberState.ACTIVE,
+                    memberId,
+                    LocalDateTime.now(),
+                    LocalDateTime.now()
+            );
+            Cart cart = new Cart(actualBuyer);
+            CartItem cartItem = cart.addItem(100L, 5);
+            ReflectionTestUtils.setField(cartItem, "id", 10L);
+
+            OrderCreateRequest request = new OrderCreateRequest(
+                    List.of(10L),
+                    "12345",
+                    "서울시 강남구",
+                    "101호"
+            );
+            ProductInfo product = new ProductInfo(
+                    100L,
+                    2L,
+                    "keyboard",
+                    "image",
+                    10000L,
+                    9000L,
+                    5,
+                    1,
+                    "ON_SALE"
+            );
+
+            given(marketMemberRepository.findByIdForUpdate(memberId)).willReturn(Optional.of(actualBuyer));
+            given(orderRepository.existsByBuyerIdAndState(memberId, OrderState.PENDING_PAYMENT)).willReturn(false);
+            given(cartRepository.findByBuyer(actualBuyer)).willReturn(Optional.of(cart));
+            given(marketSupport.getProducts(List.of(100L))).willReturn(List.of(product));
+
+            assertThatThrownBy(() -> marketCreateOrderUseCase.createOrder(memberId, request))
+                    .isInstanceOf(CustomException.class)
+                    .satisfies(ex -> {
+                        CustomException customException = (CustomException) ex;
+                        assertThat(customException.getErrorCode()).isEqualTo(ErrorCode.CART_PRODUCT_OUT_OF_STOCK);
+                    });
         }
     }
 }

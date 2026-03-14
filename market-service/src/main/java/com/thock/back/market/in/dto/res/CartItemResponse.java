@@ -53,7 +53,7 @@ public record CartItemResponse (
                 product.getImageUrl(),
                 product.getPrice(),
                 product.getSalePrice(),
-                product.getStock(),
+                product.availableStock(),
 //                .isAvailable(product.isAvailable())
                 totalPrice,
                 totalSalePrice,

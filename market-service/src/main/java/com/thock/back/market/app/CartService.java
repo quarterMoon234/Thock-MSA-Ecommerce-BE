@@ -78,7 +78,7 @@ public class CartService {
                             product.getImageUrl(),
                             product.getPrice(),
                             product.getSalePrice(),
-                            product.getStock(),
+                            product.availableStock(),
                             totalPrice,
                             totalSalePrice,
                             discountAmount
@@ -115,8 +115,8 @@ public class CartService {
                 .mapToInt(CartItem::getQuantity)
                 .sum();
 
-        // 재고 확인 (기존 장바구니 수량 + 신규 추가 수량)
-        if (product.getStock() < existingQuantity + request.quantity()) {
+        // 주문 가능 재고(총 재고 - 예약 재고)를 기준으로 검증
+        if (product.availableStock() < existingQuantity + request.quantity()) {
              throw new CustomException(ErrorCode.CART_PRODUCT_OUT_OF_STOCK);
         }
 
