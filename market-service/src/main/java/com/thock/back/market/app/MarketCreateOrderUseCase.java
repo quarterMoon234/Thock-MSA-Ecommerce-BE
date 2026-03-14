@@ -99,12 +99,12 @@ public class MarketCreateOrderUseCase {
                 throw new CustomException(ErrorCode.CART_PRODUCT_INFO_NOT_FOUND);
             }
 
-            // 재고 확인
-            if (product.getStock() < cartItem.getQuantity()) {
+            int availableStock = product.availableStock();
+            if (availableStock < cartItem.getQuantity()) {
                 throw new CustomException(
                         ErrorCode.CART_PRODUCT_OUT_OF_STOCK,
                         String.format("%s 상품의 재고가 부족합니다. (필요: %d개, 재고: %d개)",
-                                product.getName(), cartItem.getQuantity(), product.getStock())
+                                product.getName(), cartItem.getQuantity(), availableStock)
                 );
             }
 

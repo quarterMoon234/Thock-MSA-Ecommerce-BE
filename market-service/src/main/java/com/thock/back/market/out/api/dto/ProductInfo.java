@@ -11,9 +11,16 @@ public class ProductInfo {
     Long price;
     Long salePrice;
     Integer stock;
+    Integer reservedStock;
     String state; // ProductState
 
     public boolean isAvailable() {
-        return "ON_SALE".equals(state) && stock != null && stock > 0;
+        return "ON_SALE".equals(state) && availableStock() > 0;
+    }
+
+    public int availableStock() {
+        int totalStock = stock == null ? 0 : stock;
+        int reserved = reservedStock == null ? 0 : reservedStock;
+        return Math.max(0, totalStock - reserved);
     }
 }
