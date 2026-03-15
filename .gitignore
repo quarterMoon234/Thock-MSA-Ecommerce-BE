@@ -55,6 +55,10 @@ logs/
 .DS_store
 .claude
 
+### Load Test Results ###
+loadtest/results/*
+!loadtest/results/.gitkeep
+
 ### AWS EC2 Environment/Sensitive Files ###
 AWS EC2/deploy-kubernetes/base/secrets.yaml
 AWS EC2/deploy-kubernetes/ingress/ip-whitelist-middleware.yaml

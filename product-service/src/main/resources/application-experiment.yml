@@ -1,0 +1,11 @@
+product:
+  metrics:
+    enabled: ${PRODUCT_METRICS_ENABLED:true}
+    collect-interval-ms: ${PRODUCT_METRICS_COLLECT_INTERVAL_MS:5000}
+  event:
+    publish-mode: ${PRODUCT_EVENT_PUBLISH_MODE:outbox}
+  outbox:
+    enabled: ${PRODUCT_OUTBOX_ENABLED:true}
+    poller:
+      interval-ms: ${PRODUCT_OUTBOX_POLLER_INTERVAL_MS:15000}
+      after-send-delay-ms: ${PRODUCT_OUTBOX_POLLER_AFTER_SEND_DELAY_MS:0}
