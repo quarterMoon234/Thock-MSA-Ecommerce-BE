@@ -39,6 +39,7 @@ import static org.mockito.Mockito.when;
 @SpringBootTest(
         classes = ProductServiceApplication.class,
         properties = {
+                "product.event.publish-mode=outbox",
                 "product.outbox.enabled=false",
                 "product.inbox.enabled=false",
                 "spring.kafka.bootstrap-servers=${spring.embedded.kafka.brokers}",

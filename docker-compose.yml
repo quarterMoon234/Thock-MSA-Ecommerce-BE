@@ -80,13 +80,17 @@ services:
     environment:
       TZ: Asia/Seoul
       JAVA_TOOL_OPTIONS: "-Duser.timezone=Asia/Seoul -Xms256m -Xmx512m"
-      SPRING_PROFILES_ACTIVE: docker
+      SPRING_PROFILES_ACTIVE: ${PRODUCT_SERVICE_PROFILES_ACTIVE:-docker}
       MYSQL_HOST: mysql
       MYSQL_PORT: 3306
       MYSQL_DATABASE: thock_product_db
       MYSQL_USER: thock_product_db_user
       MYSQL_PASSWORD: ${PRODUCT_DB_PASSWORD}
       KAFKA_BOOTSTRAP_SERVERS: redpanda:29092
+      PRODUCT_EVENT_PUBLISH_MODE: ${PRODUCT_EVENT_PUBLISH_MODE:-outbox}
+      PRODUCT_OUTBOX_ENABLED: ${PRODUCT_OUTBOX_ENABLED:-true}
+      PRODUCT_OUTBOX_POLLER_INTERVAL_MS: ${PRODUCT_OUTBOX_POLLER_INTERVAL_MS:-3000}
+      PRODUCT_OUTBOX_POLLER_AFTER_SEND_DELAY_MS: ${PRODUCT_OUTBOX_POLLER_AFTER_SEND_DELAY_MS:-0}
       LOG_PATH: /app/logs
     depends_on:
       mysql:
@@ -327,6 +331,56 @@ services:
     networks:
       - internal
     restart: unless-stopped
+
+  k6:
+    image: grafana/k6:0.49.0
+    profiles:
+      - loadtest
+    entrypoint:
+      - k6
+    environment:
+      BASE_URL: ${K6_BASE_URL:-http://api-gateway:8080}
+      PASSWORD: ${K6_PASSWORD:-password123!}
+      RATE: ${K6_RATE:-10}
+      DURATION: ${K6_DURATION:-2m}
+      PRE_ALLOCATED_VUS: ${K6_PRE_ALLOCATED_VUS:-20}
+      MAX_VUS: ${K6_MAX_VUS:-100}
+      CATEGORY: ${K6_CATEGORY:-KEYBOARD}
+      PRICE: ${K6_PRICE:-1000}
+      SALE_PRICE: ${K6_SALE_PRICE:-0}
+      STOCK: ${K6_STOCK:-5}
+      BANK_CODE: ${K6_BANK_CODE:-088}
+      ACCOUNT_NUMBER: ${K6_ACCOUNT_NUMBER:-1234567890}
+      ACCOUNT_HOLDER: ${K6_ACCOUNT_HOLDER:-k6-seller}
+      EXPERIMENT_NAME: ${K6_EXPERIMENT_NAME:-product-create-load}
+      SLEEP_BETWEEN: ${K6_SLEEP_BETWEEN:-0}
+      SUMMARY_PATH: ${K6_SUMMARY_PATH:-/results/product-create-summary.json}
+    volumes:
+      - ./loadtest:/scripts:ro
+      - ./loadtest/results:/results
+    networks:
+      - internal
+    depends_on:
+      api-gateway:
+        condition: service_started
+      member-service:
+        condition: service_started
+      product-service:
+        condition: service_started
+    restart: "no"
+
+  kcat:
+    image: edenhill/kcat:1.7.1
+    profiles:
+      - loadtest
+    entrypoint:
+      - kcat
+    networks:
+      - internal
+    depends_on:
+      redpanda:
+        condition: service_started
+    restart: "no"
 
 # ==================== Networks ====================
 networks:

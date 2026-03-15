@@ -6,4 +6,6 @@ import java.util.List;
 
 public interface ProductOutboxEventRepository extends JpaRepository<ProductOutboxEvent, Long> {
     List<ProductOutboxEvent> findTop100ByStatusOrderByCreatedAtAsc(ProductOutboxStatus status);
+
+    long countByStatus(ProductOutboxStatus status);
 }
