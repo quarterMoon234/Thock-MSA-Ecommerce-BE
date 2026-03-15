@@ -6,12 +6,14 @@ import com.thock.back.global.kafka.KafkaTopics;
 import com.thock.back.product.messaging.publisher.ProductEventPublisher;
 import com.thock.back.shared.product.event.ProductEvent;
 import lombok.RequiredArgsConstructor;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 @Component
 @RequiredArgsConstructor
+@ConditionalOnProperty(prefix = "product.event", name = "publish-mode", havingValue = "outbox", matchIfMissing = true)
 public class ProductOutboxEventPublisher implements ProductEventPublisher {
 
     private final ProductOutboxEventRepository productOutboxEventRepository;

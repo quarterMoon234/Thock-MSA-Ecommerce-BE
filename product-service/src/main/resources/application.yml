@@ -53,7 +53,13 @@ product:
     enabled: true
   kafka:
     consumer-group: product-service
+  metrics:
+    enabled: true
+    collect-interval-ms: 10000
+  event:
+    publish-mode: outbox
   outbox:
     enabled: true
     poller:
       interval-ms: 3000
+      after-send-delay-ms: 0
