@@ -29,6 +29,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringBootTest(
         classes = ProductServiceApplication.class,
         properties = {
+                "product.event.publish-mode=outbox",
                 "product.outbox.enabled=true",
                 "product.inbox.enabled=false",
                 "spring.kafka.listener.auto-startup=false"
