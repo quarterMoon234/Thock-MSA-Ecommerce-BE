@@ -6,6 +6,19 @@ product:
     publish-mode: ${PRODUCT_EVENT_PUBLISH_MODE:outbox}
   outbox:
     enabled: ${PRODUCT_OUTBOX_ENABLED:true}
+    max-retries: ${PRODUCT_OUTBOX_MAX_RETRIES:10}
+    retry-delay-ms: ${PRODUCT_OUTBOX_RETRY_DELAY_MS:5000}
+    max-retry-delay-ms: ${PRODUCT_OUTBOX_MAX_RETRY_DELAY_MS:300000}
+    kafka:
+      request-timeout-ms: ${PRODUCT_OUTBOX_KAFKA_REQUEST_TIMEOUT_MS:2000}
+      delivery-timeout-ms: ${PRODUCT_OUTBOX_KAFKA_DELIVERY_TIMEOUT_MS:5000}
+      retry-backoff-ms: ${PRODUCT_OUTBOX_KAFKA_RETRY_BACKOFF_MS:1000}
+      max-block-ms: ${PRODUCT_OUTBOX_KAFKA_MAX_BLOCK_MS:5000}
     poller:
       interval-ms: ${PRODUCT_OUTBOX_POLLER_INTERVAL_MS:15000}
       after-send-delay-ms: ${PRODUCT_OUTBOX_POLLER_AFTER_SEND_DELAY_MS:0}
+    cleanup:
+      enabled: ${PRODUCT_OUTBOX_CLEANUP_ENABLED:true}
+      interval-ms: ${PRODUCT_OUTBOX_CLEANUP_INTERVAL_MS:3600000}
+      retention-days: ${PRODUCT_OUTBOX_CLEANUP_RETENTION_DAYS:7}
+      batch-size: ${PRODUCT_OUTBOX_CLEANUP_BATCH_SIZE:500}
