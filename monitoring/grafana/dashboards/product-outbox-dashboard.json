@@ -9,7 +9,7 @@
     {
       "datasource": "Prometheus",
       "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
-      "gridPos": { "h": 5, "w": 6, "x": 0, "y": 0 },
+      "gridPos": { "h": 5, "w": 4, "x": 0, "y": 0 },
       "id": 1,
       "options": {
         "colorMode": "value",
@@ -19,14 +19,16 @@
         "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
         "textMode": "value"
       },
-      "targets": [{ "expr": "product_outbox_total_count{job=\"product-service\"}", "refId": "A" }],
+      "targets": [
+        { "expr": "product_outbox_total_count{job=\"product-service\"}", "refId": "A" }
+      ],
       "title": "Outbox 총 건수",
       "type": "stat"
     },
     {
       "datasource": "Prometheus",
       "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
-      "gridPos": { "h": 5, "w": 6, "x": 6, "y": 0 },
+      "gridPos": { "h": 5, "w": 4, "x": 4, "y": 0 },
       "id": 2,
       "options": {
         "colorMode": "value",
@@ -36,14 +38,16 @@
         "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
         "textMode": "value"
       },
-      "targets": [{ "expr": "product_outbox_status_count{job=\"product-service\",status=\"PENDING\"}", "refId": "A" }],
+      "targets": [
+        { "expr": "product_outbox_status_count{job=\"product-service\",status=\"PENDING\"}", "refId": "A" }
+      ],
       "title": "PENDING 건수",
       "type": "stat"
     },
     {
       "datasource": "Prometheus",
       "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
-      "gridPos": { "h": 5, "w": 6, "x": 12, "y": 0 },
+      "gridPos": { "h": 5, "w": 4, "x": 8, "y": 0 },
       "id": 3,
       "options": {
         "colorMode": "value",
@@ -53,14 +57,35 @@
         "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
         "textMode": "value"
       },
-      "targets": [{ "expr": "product_outbox_status_count{job=\"product-service\",status=\"SENT\"}", "refId": "A" }],
+      "targets": [
+        { "expr": "product_outbox_status_count{job=\"product-service\",status=\"SENT\"}", "refId": "A" }
+      ],
       "title": "SENT 건수",
       "type": "stat"
     },
     {
       "datasource": "Prometheus",
+      "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
+      "gridPos": { "h": 5, "w": 4, "x": 12, "y": 0 },
+      "id": 10,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "textMode": "value"
+      },
+      "targets": [
+        { "expr": "product_outbox_status_count{job=\"product-service\",status=\"FAILED\"}", "refId": "A" }
+      ],
+      "title": "FAILED 건수",
+      "type": "stat"
+    },
+    {
+      "datasource": "Prometheus",
       "fieldConfig": { "defaults": { "unit": "percent", "decimals": 0 }, "overrides": [] },
-      "gridPos": { "h": 5, "w": 6, "x": 18, "y": 0 },
+      "gridPos": { "h": 5, "w": 4, "x": 16, "y": 0 },
       "id": 4,
       "options": {
         "colorMode": "value",
@@ -70,14 +95,35 @@
         "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
         "textMode": "value"
       },
-      "targets": [{ "expr": "product_outbox_pending_ratio_percent{job=\"product-service\"}", "refId": "A" }],
+      "targets": [
+        { "expr": "product_outbox_pending_ratio_percent{job=\"product-service\"}", "refId": "A" }
+      ],
       "title": "PENDING 비율",
       "type": "stat"
     },
     {
       "datasource": "Prometheus",
-      "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
-      "gridPos": { "h": 5, "w": 12, "x": 0, "y": 5 },
+      "fieldConfig": { "defaults": { "unit": "s", "decimals": 0 }, "overrides": [] },
+      "gridPos": { "h": 5, "w": 4, "x": 20, "y": 0 },
+      "id": 11,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "textMode": "value"
+      },
+      "targets": [
+        { "expr": "product_outbox_oldest_pending_age_seconds{job=\"product-service\"}", "refId": "A" }
+      ],
+      "title": "가장 오래된 PENDING 대기 시간",
+      "type": "stat"
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": { "defaults": { "unit": "short", "decimals": 0 }, "overrides": [] },
+      "gridPos": { "h": 5, "w": 5, "x": 0, "y": 5 },
       "id": 5,
       "options": {
         "colorMode": "value",
@@ -89,7 +135,7 @@
       },
       "targets": [
         {
-          "expr": "sum(increase(product_outbox_publish_success_total{job=\"product-service\"}[$__range]))",
+          "expr": "round(sum(increase(product_outbox_publish_success_total{job=\"product-service\"}[$__range])))",
           "refId": "A"
         }
       ],
@@ -98,8 +144,8 @@
     },
     {
       "datasource": "Prometheus",
-      "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
-      "gridPos": { "h": 5, "w": 12, "x": 12, "y": 5 },
+      "fieldConfig": { "defaults": { "unit": "short", "decimals": 0 }, "overrides": [] },
+      "gridPos": { "h": 5, "w": 5, "x": 5, "y": 5 },
       "id": 6,
       "options": {
         "colorMode": "value",
@@ -111,11 +157,77 @@
       },
       "targets": [
         {
-          "expr": "sum(increase(product_outbox_publish_failure_total{job=\"product-service\"}[$__range]))",
+          "expr": "round(sum(increase(product_outbox_publish_failure_total{job=\"product-service\"}[$__range])))",
           "refId": "A"
         }
       ],
       "title": "발행 실패 건수(기간)",
+      "type": "stat"
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": { "defaults": { "unit": "short", "decimals": 0 }, "overrides": [] },
+      "gridPos": { "h": 5, "w": 5, "x": 10, "y": 5 },
+      "id": 12,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "textMode": "value_and_name"
+      },
+      "targets": [
+        {
+          "expr": "round(sum(increase(product_outbox_retry_scheduled_total{job=\"product-service\"}[$__range])))",
+          "refId": "A"
+        }
+      ],
+      "title": "Retry 예약 건수(기간)",
+      "type": "stat"
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": { "defaults": { "unit": "short", "decimals": 0 }, "overrides": [] },
+      "gridPos": { "h": 5, "w": 5, "x": 15, "y": 5 },
+      "id": 13,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "textMode": "value_and_name"
+      },
+      "targets": [
+        {
+          "expr": "round(sum(increase(product_outbox_terminal_failed_total{job=\"product-service\"}[$__range])))",
+          "refId": "A"
+        }
+      ],
+      "title": "FAILED 전환 건수(기간)",
+      "type": "stat"
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": { "defaults": { "unit": "short", "decimals": 0 }, "overrides": [] },
+      "gridPos": { "h": 5, "w": 4, "x": 20, "y": 5 },
+      "id": 14,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "textMode": "value_and_name"
+      },
+      "targets": [
+        {
+          "expr": "round(sum(increase(product_outbox_cleanup_deleted_total{job=\"product-service\"}[$__range])))",
+          "refId": "A"
+        }
+      ],
+      "title": "Cleanup 삭제 건수(기간)",
       "type": "stat"
     },
     {
@@ -186,17 +298,65 @@
       },
       "targets": [
         {
-          "expr": "increase(product_outbox_publish_success_total{job=\"product-service\"}[$__interval])",
+          "expr": "round(increase(product_outbox_publish_success_total{job=\"product-service\"}[$__interval]))",
           "legendFormat": "SUCCESS",
           "refId": "A"
         },
         {
-          "expr": "increase(product_outbox_publish_failure_total{job=\"product-service\"}[$__interval])",
+          "expr": "round(increase(product_outbox_publish_failure_total{job=\"product-service\"}[$__interval]))",
           "legendFormat": "FAILURE",
           "refId": "B"
+        },
+        {
+          "expr": "round(increase(product_outbox_retry_scheduled_total{job=\"product-service\"}[$__interval]))",
+          "legendFormat": "RETRY",
+          "refId": "C"
+        },
+        {
+          "expr": "round(increase(product_outbox_terminal_failed_total{job=\"product-service\"}[$__interval]))",
+          "legendFormat": "FAILED",
+          "refId": "D"
         }
       ],
-      "title": "Outbox 발행 결과 추이",
+      "title": "Outbox 발행 / 재시도 / 실패 추이",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "min": 0,
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "pointSize": 3,
+            "spanNulls": true
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 9, "w": 12, "x": 0, "y": 19 },
+      "id": 15,
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": ["lastNotNull", "max"]
+        },
+        "tooltip": { "mode": "multi" }
+      },
+      "targets": [
+        {
+          "expr": "product_outbox_oldest_pending_age_seconds{job=\"product-service\"}",
+          "legendFormat": "OLDEST_PENDING_AGE",
+          "refId": "A"
+        }
+      ],
+      "title": "가장 오래된 PENDING 대기 시간 추이",
       "type": "timeseries"
     },
     {
@@ -208,7 +368,7 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 19 },
+      "gridPos": { "h": 9, "w": 12, "x": 12, "y": 19 },
       "id": 9,
       "options": {
         "displayLabels": ["name", "percent"],
@@ -238,6 +398,6 @@
   "timezone": "Asia/Seoul",
   "title": "Product Outbox Dashboard",
   "uid": "product-outbox-dashboard",
-  "version": 1,
+  "version": 2,
   "weekStart": ""
 }
