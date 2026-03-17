@@ -67,6 +67,17 @@ class ProductInboxDatabaseIntegrationTest {
     }
 
     @Test
+    @DisplayName("claimIfAbsent allows the same key for a different topic")
+    void tryClaim_whenTopicDiffers_allowsAnotherInsert() {
+        boolean firstClaimed = inboxGuard.tryClaim("order-4:reserve:1-2", TOPIC, CONSUMER_GROUP);
+        boolean secondClaimed = inboxGuard.tryClaim("order-4:reserve:1-2", "market.order.stock.changed.v2", CONSUMER_GROUP);
+
+        assertThat(firstClaimed).isTrue();
+        assertThat(secondClaimed).isTrue();
+        assertThat(inboxEventRepository.count()).isEqualTo(2);
+    }
+
+    @Test
     @DisplayName("claim is rolled back when the outer transaction fails")
     void tryClaim_whenOuterTransactionRollsBack_canClaimAgain() {
         assertThatThrownBy(() ->

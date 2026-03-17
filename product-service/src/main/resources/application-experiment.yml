@@ -4,6 +4,13 @@ product:
     collect-interval-ms: ${PRODUCT_METRICS_COLLECT_INTERVAL_MS:5000}
   event:
     publish-mode: ${PRODUCT_EVENT_PUBLISH_MODE:outbox}
+  inbox:
+    enabled: ${PRODUCT_INBOX_ENABLED:true}
+    cleanup:
+      enabled: ${PRODUCT_INBOX_CLEANUP_ENABLED:true}
+      interval-ms: ${PRODUCT_INBOX_CLEANUP_INTERVAL_MS:3600000}
+      retention-days: ${PRODUCT_INBOX_CLEANUP_RETENTION_DAYS:7}
+      batch-size: ${PRODUCT_INBOX_CLEANUP_BATCH_SIZE:500}
   outbox:
     enabled: ${PRODUCT_OUTBOX_ENABLED:true}
     max-retries: ${PRODUCT_OUTBOX_MAX_RETRIES:10}
