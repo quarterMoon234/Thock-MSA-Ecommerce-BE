@@ -25,16 +25,16 @@ public class ProductInboxEvent {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, length = 128)
+    @Column(name = "idempotency_key" , nullable = false, length = 128)
     private String idempotencyKey;
 
-    @Column(nullable = false, length = 100)
+    @Column(name = "topic", nullable = false, length = 100)
     private String topic;
 
-    @Column(nullable = false, length = 100)
+    @Column(name = "consumer_group", nullable = false, length = 100)
     private String consumerGroup;
 
-    @Column(nullable = false, updatable = false)
+    @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
     public static ProductInboxEvent create(String idempotencyKey, String topic, String consumerGroup) {
