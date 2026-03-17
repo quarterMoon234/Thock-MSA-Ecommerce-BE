@@ -22,6 +22,18 @@ public class ProductOutboxKafkaConfig {
     @Value("${spring.kafka.bootstrap-servers:localhost:9092}")
     private String bootstrapServers;
 
+    @Value("${product.outbox.kafka.request-timeout-ms:30000}")
+    private int requestTimeoutMs;
+
+    @Value("${product.outbox.kafka.delivery-timeout-ms:120000}")
+    private int deliveryTimeoutMs;
+
+    @Value("${product.outbox.kafka.retry-backoff-ms:1000}")
+    private int retryBackoffMs;
+
+    @Value("${product.outbox.kafka.max-block-ms:60000}")
+    private long maxBlockMs;
+
     @Bean("productOutboxProducerFactory")
     public ProducerFactory<String, String> productOutboxProducerFactory() {
         Map<String, Object>  props = new HashMap<>();
@@ -29,6 +41,10 @@ public class ProductOutboxKafkaConfig {
         props.put(ProducerConfig.ACKS_CONFIG, "all");
         props.put(ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG, true);
         props.put(ProducerConfig.RETRIES_CONFIG, Integer.MAX_VALUE);
+        props.put(ProducerConfig.REQUEST_TIMEOUT_MS_CONFIG, requestTimeoutMs);
+        props.put(ProducerConfig.DELIVERY_TIMEOUT_MS_CONFIG, deliveryTimeoutMs);
+        props.put(ProducerConfig.RETRY_BACKOFF_MS_CONFIG, retryBackoffMs);
+        props.put(ProducerConfig.MAX_BLOCK_MS_CONFIG, maxBlockMs);
 
         return new DefaultKafkaProducerFactory<>(props, new StringSerializer(), new StringSerializer());
     }
