@@ -9,6 +9,8 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
@@ -22,6 +24,7 @@ public class ProductOutboxMetricsCollector {
 
     private final AtomicLong outboxTotal = new AtomicLong(0);
     private final AtomicLong outboxPendingRatioPercent = new AtomicLong(0);
+    private final AtomicLong oldestPendingAgeSeconds = new AtomicLong(0);
     private final Map<ProductOutboxStatus, AtomicLong> outboxStatusCount = new EnumMap<>(ProductOutboxStatus.class);
     private final Map<ProductOutboxStatus, AtomicLong> outboxStatusRatioPercent = new EnumMap<>(ProductOutboxStatus.class);
 
@@ -37,6 +40,10 @@ public class ProductOutboxMetricsCollector {
 
         Gauge.builder("product_outbox_pending_ratio_percent", outboxPendingRatioPercent, AtomicLong::get)
                 .description("Pending outbox ratio percent")
+                .register(meterRegistry);
+
+        Gauge.builder("product_outbox_oldest_pending_age_seconds", oldestPendingAgeSeconds, AtomicLong::get)
+                .description("Age in seconds of the oldest pending product outbox event")
                 .register(meterRegistry);
 
         for (ProductOutboxStatus status : ProductOutboxStatus.values()) {
@@ -79,6 +86,16 @@ public class ProductOutboxMetricsCollector {
                 long count = counts.getOrDefault(status, 0L);
                 long ratio = totalOutbox == 0 ? 0 : (count * 100) / totalOutbox;
                 outboxStatusRatioPercent.get(status).set(ratio);
+            }
+
+            LocalDateTime oldestPendingCreatedAt =
+                    productOutboxEventRepository.findOldestCreatedAtByStatus(ProductOutboxStatus.PENDING);
+
+            if (oldestPendingCreatedAt == null) {
+                oldestPendingAgeSeconds.set(0);
+            } else {
+                long ageSeconds = Duration.between(oldestPendingCreatedAt, LocalDateTime.now()).getSeconds();
+                oldestPendingAgeSeconds.set(Math.max(ageSeconds, 0));
             }
         } catch (Exception e) {
             log.warn("Failed to collect product outbox metrics: {}", e.getMessage());

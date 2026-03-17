@@ -5,7 +5,6 @@ import com.thock.back.global.kafka.KafkaTopics;
 import com.thock.back.product.ProductServiceApplication;
 import com.thock.back.shared.product.event.ProductEvent;
 import com.thock.back.shared.product.event.ProductEventType;
-import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -23,6 +22,7 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.test.EmbeddedKafkaBroker;
 import org.springframework.kafka.test.context.EmbeddedKafka;
 import org.springframework.kafka.test.utils.KafkaTestUtils;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -118,6 +118,8 @@ class ProductOutboxPollerIntegrationTest {
         Header typeHeader = record.headers().lastHeader("__TypeId__");
 
         assertThat(sentEvent.getStatus()).isEqualTo(ProductOutboxStatus.SENT);
+        assertThat(sentEvent.getSentAt()).isNotNull();
+        assertThat(sentEvent.getRetryCount()).isZero();
         assertThat(record.key()).isEqualTo("1");
         assertThat(typeHeader).isNotNull();
         assertThat(new String(typeHeader.value(), StandardCharsets.UTF_8))
@@ -127,8 +129,8 @@ class ProductOutboxPollerIntegrationTest {
     }
 
     @Test
-    @DisplayName("poller keeps the event pending when Kafka publish fails")
-    void pollAndPublish_whenKafkaPublishFails_keepsPendingStatus() throws Exception {
+    @DisplayName("poller schedules retry when Kafka publish fails")
+    void pollAndPublish_whenKafkaPublishFails_schedulesRetry() throws Exception {
         ProductEvent event = ProductEvent.builder()
                 .productId(2L)
                 .sellerId(202L)
@@ -163,6 +165,54 @@ class ProductOutboxPollerIntegrationTest {
         ProductOutboxEvent reloadedEvent = productOutboxEventRepository.findById(pendingEvent.getId()).orElseThrow();
 
         assertThat(reloadedEvent.getStatus()).isEqualTo(ProductOutboxStatus.PENDING);
+        assertThat(reloadedEvent.getRetryCount()).isEqualTo(1);
+        assertThat(reloadedEvent.getLastError()).contains("RuntimeException");
+        assertThat(reloadedEvent.getNextAttemptAt()).isAfterOrEqualTo(reloadedEvent.getCreatedAt());
+        assertThat(reloadedEvent.getSentAt()).isNull();
+    }
+
+    @Test
+    @DisplayName("poller moves event to FAILED when max retries are exceeded")
+    void pollAndPublish_whenMaxRetriesExceeded_marksEventFailed() throws Exception {
+        ProductEvent event = ProductEvent.builder()
+                .productId(3L)
+                .sellerId(303L)
+                .name("Zoom65")
+                .price(270_000L)
+                .salePrice(255_000L)
+                .stock(7)
+                .imageUrl("https://image.example/zoom65.png")
+                .productState("ON_SALE")
+                .eventType(ProductEventType.UPDATE)
+                .build();
+
+        ProductOutboxEvent pendingEvent = productOutboxEventRepository.save(
+                ProductOutboxEvent.create(
+                        KafkaTopics.PRODUCT_CHANGED,
+                        ProductEvent.class.getName(),
+                        "3",
+                        objectMapper.writeValueAsString(event)
+                )
+        );
+
+        @SuppressWarnings("unchecked")
+        KafkaTemplate<String, String> failingKafkaTemplate = mock(KafkaTemplate.class);
+        when(failingKafkaTemplate.send(org.mockito.ArgumentMatchers.any(ProducerRecord.class)))
+                .thenThrow(new RuntimeException("broker unavailable"));
+
+        ProductOutboxPoller productOutboxPoller =
+                new ProductOutboxPoller(productOutboxEventRepository, failingKafkaTemplate);
+        ReflectionTestUtils.setField(productOutboxPoller, "maxRetries", 1);
+
+        transactionTemplate.executeWithoutResult(status -> productOutboxPoller.pollAndPublish());
+
+        ProductOutboxEvent reloadedEvent = productOutboxEventRepository.findById(pendingEvent.getId()).orElseThrow();
+
+        assertThat(reloadedEvent.getStatus()).isEqualTo(ProductOutboxStatus.FAILED);
+        assertThat(reloadedEvent.getRetryCount()).isEqualTo(1);
+        assertThat(reloadedEvent.getLastError()).contains("RuntimeException");
+        assertThat(reloadedEvent.getNextAttemptAt()).isNull();
+        assertThat(reloadedEvent.getSentAt()).isNull();
     }
 
     private Consumer<String, String> createConsumer() {
