@@ -10,12 +10,12 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "product_inbox_event", uniqueConstraints = {
         @UniqueConstraint(
-                name = "uk_product_inbox_event_idempotency_key_consumer_group",
-                columnNames = {"idempotencyKey", "consumerGroup"}
+                name = "uk_product_inbox_event_topic_consumer_group_idempotency_key",
+                columnNames = {"topic", "consumer_group", "idempotency_key"}
         )
 }, indexes = {
-        @Index(name = "idx_product_inbox_event_topic_consumer_group", columnList = "topic, consumerGroup"),
-        @Index(name = "idx_product_inbox_event_created_at", columnList = "createdAt")
+        @Index(name = "idx_product_inbox_event_topic_consumer_group", columnList = "topic, consumer_group"),
+        @Index(name = "idx_product_inbox_event_created_at", columnList = "created_at")
 })
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
