@@ -51,6 +51,11 @@ springdoc:
 product:
   inbox:
     enabled: true
+    cleanup:
+      enabled: true
+      interval-ms: 3600000
+      retention-days: 7
+      batch-size: 500
   kafka:
     consumer-group: product-service
   metrics:
