@@ -11,6 +11,10 @@ product:
       interval-ms: ${PRODUCT_INBOX_CLEANUP_INTERVAL_MS:3600000}
       retention-days: ${PRODUCT_INBOX_CLEANUP_RETENTION_DAYS:7}
       batch-size: ${PRODUCT_INBOX_CLEANUP_BATCH_SIZE:500}
+  dlq:
+    retry:
+      interval-ms: ${PRODUCT_DLQ_RETRY_INTERVAL_MS:1000}
+      max-attempts: ${PRODUCT_DLQ_RETRY_MAX_ATTEMPTS:2}
   outbox:
     enabled: ${PRODUCT_OUTBOX_ENABLED:true}
     max-retries: ${PRODUCT_OUTBOX_MAX_RETRIES:10}
