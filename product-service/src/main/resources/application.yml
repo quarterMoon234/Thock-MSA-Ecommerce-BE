@@ -56,6 +56,10 @@ product:
       interval-ms: 3600000
       retention-days: 7
       batch-size: 500
+  dlq:
+    retry:
+      interval-ms: 1000
+      max-attempts: 2
   kafka:
     consumer-group: product-service
   metrics:

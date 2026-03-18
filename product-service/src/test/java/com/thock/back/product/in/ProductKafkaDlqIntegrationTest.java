@@ -130,10 +130,10 @@ class ProductKafkaDlqIntegrationTest {
 
     // 일반 RuntimeException 발생 시 최초 1회 + 재시도 2회 후 DLQ 전송 (총 3회 시도)
     @Test
-    @DisplayName("RuntimeException is retried and then sent to the DLQ")
-    void handle_whenRuntimeExceptionOccurs_retriesThenSendsToDlq() throws Exception {
+    @DisplayName("RetryableKafkaProcessingException is retried and then sent to the DLQ")
+    void handle_whenRetryableKafkaProcessingExceptionOccurs_retriesThenSendsToDlq() throws Exception {
         MarketOrderStockChangedEvent event = stockChangedEvent("ORDER-RUNTIME-ERROR");
-        doThrow(new RuntimeException("temporary failure"))
+        doThrow(new RetryableKafkaProcessingException("temporary failure"))
                 .when(productStockService)
                 .handle(any(MarketOrderStockChangedEvent.class));
 
@@ -145,7 +145,7 @@ class ProductKafkaDlqIntegrationTest {
         assertThat(dlqMessage.payload().orderNumber()).isEqualTo(event.orderNumber());
         assertThat(dlqMessage.originalTopic()).isEqualTo(KafkaTopics.MARKET_ORDER_STOCK_CHANGED);
         assertThat(dlqMessage.exceptionClass()).contains("ListenerExecutionFailedException");
-        assertThat(dlqMessage.causeClass()).contains(RuntimeException.class.getName());
+        assertThat(dlqMessage.causeClass()).contains(RetryableKafkaProcessingException.class.getName());
         verify(productStockService, timeout(10000).times(3)).handle(any(MarketOrderStockChangedEvent.class));
     }
 
