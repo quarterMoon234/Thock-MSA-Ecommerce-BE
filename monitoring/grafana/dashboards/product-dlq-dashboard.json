@@ -1,0 +1,163 @@
+{
+  "annotations": { "list": [] },
+  "editable": true,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "liveNow": false,
+  "panels": [
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": { "defaults": { "unit": "short", "decimals": 0 }, "overrides": [] },
+      "gridPos": { "h": 5, "w": 6, "x": 0, "y": 0 },
+      "id": 1,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "textMode": "value_and_name"
+      },
+      "targets": [
+        {
+          "expr": "round(sum(increase(product_dlq_retry_attempt_total{job=\"product-service\"}[$__range])))",
+          "refId": "A"
+        }
+      ],
+      "title": "DLQ 재시도 건수(기간)",
+      "type": "stat"
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": { "defaults": { "unit": "short", "decimals": 0 }, "overrides": [] },
+      "gridPos": { "h": 5, "w": 6, "x": 6, "y": 0 },
+      "id": 2,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "textMode": "value_and_name"
+      },
+      "targets": [
+        {
+          "expr": "round(sum(increase(product_dlq_published_total{job=\"product-service\"}[$__range])))",
+          "refId": "A"
+        }
+      ],
+      "title": "DLQ 발행 건수(기간)",
+      "type": "stat"
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": { "defaults": { "unit": "short", "decimals": 0 }, "overrides": [] },
+      "gridPos": { "h": 5, "w": 6, "x": 12, "y": 0 },
+      "id": 3,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "textMode": "value_and_name"
+      },
+      "targets": [
+        {
+          "expr": "round(sum(increase(product_dlq_non_retryable_total{job=\"product-service\"}[$__range])))",
+          "refId": "A"
+        }
+      ],
+      "title": "즉시 DLQ 건수(기간)",
+      "type": "stat"
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": { "defaults": { "unit": "short", "decimals": 0 }, "overrides": [] },
+      "gridPos": { "h": 5, "w": 6, "x": 18, "y": 0 },
+      "id": 4,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "textMode": "value_and_name"
+      },
+      "targets": [
+        {
+          "expr": "round(sum(increase(product_dlq_retry_exhausted_total{job=\"product-service\"}[$__range])))",
+          "refId": "A"
+        }
+      ],
+      "title": "재시도 소진 후 DLQ 건수(기간)",
+      "type": "stat"
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "min": 0,
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "fillOpacity": 16,
+            "showPoints": "never",
+            "pointSize": 3,
+            "spanNulls": true
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 5 },
+      "id": 5,
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": ["lastNotNull", "max"]
+        },
+        "tooltip": { "mode": "multi" }
+      },
+      "targets": [
+        {
+          "expr": "round(increase(product_dlq_retry_attempt_total{job=\"product-service\"}[$__interval]))",
+          "legendFormat": "재시도",
+          "refId": "A"
+        },
+        {
+          "expr": "round(increase(product_dlq_published_total{job=\"product-service\"}[$__interval]))",
+          "legendFormat": "DLQ 발행",
+          "refId": "B"
+        },
+        {
+          "expr": "round(increase(product_dlq_non_retryable_total{job=\"product-service\"}[$__interval]))",
+          "legendFormat": "즉시 DLQ",
+          "refId": "C"
+        },
+        {
+          "expr": "round(increase(product_dlq_retry_exhausted_total{job=\"product-service\"}[$__interval]))",
+          "legendFormat": "재시도 소진 후 DLQ",
+          "refId": "D"
+        }
+      ],
+      "title": "DLQ 재시도 / 발행 추이",
+      "type": "timeseries"
+    }
+  ],
+  "refresh": "10s",
+  "schemaVersion": 39,
+  "style": "dark",
+  "tags": ["product", "dlq", "kafka"],
+  "templating": { "list": [] },
+  "time": { "from": "now-15m", "to": "now" },
+  "timepicker": {},
+  "timezone": "",
+  "title": "Product DLQ Dashboard",
+  "uid": "product-dlq-dashboard",
+  "version": 1,
+  "weekStart": ""
+}
