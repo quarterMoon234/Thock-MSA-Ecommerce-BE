@@ -27,8 +27,11 @@ public class KafkaEventPublisher {
             return;
         }
 
-        kafkaTemplate.send(topic, event);
-        log.info("Published event to Kafka topic [{}]: {}", topic, event.getClass().getSimpleName());
+        String messageKey = resolveMessageKey(event);
+
+        kafkaTemplate.send(topic, messageKey, event);
+        log.info("Published event to Kafka topic [{}]: type={}, key={}",
+                topic, event.getClass().getSimpleName(), messageKey);
     }
 
     private String resolveTopicName(Object event) {
@@ -62,18 +65,36 @@ public class KafkaEventPublisher {
 
         return null;
     }
-    /** TODO
-     * switch pattern : 자바 21 이상에서 정식 지원, 17 에서도 사용은 가능함 대신 옵션 달아줘야함.
-     * 21로 바꾸고 싶은데 ci나 각 모듈들 자바 버전 전부 수정해야하고
-     * 팀원들 로컬에서도 temurin 21로 변경해주어야 하기 때문에 나중에 되면 하기로...
-     * 가독성이 아쉽긴 함.
-     *
-     * return switch (event) {
-     *             case MemberJoinedEvent e -> KafkaTopics.MEMBER_JOINED;
-     *             case MemberModifiedEvent e -> KafkaTopics.MEMBER_MODIFIED;
-     *             case MarketOrderPaymentRequestedEvent e -> KafkaTopics.MARKET_ORDER_PAYMENT_REQUESTED;
-     *             case MarketOrderPaymentCompletedEvent e -> KafkaTopics.MARKET_ORDER_PAYMENT_COMPLETED;
-     *             default -> null;
-     *         };
-     */
+
+    private String resolveMessageKey(Object event) {
+        if (event instanceof MemberJoinedEvent e) {
+            return String.valueOf(e.member().id());
+        } else if (event instanceof MemberModifiedEvent e) {
+            return String.valueOf(e.member().id());
+        } else if (event instanceof ProductEvent e) {
+            return String.valueOf(e.productId());
+        } else if (event instanceof MarketOrderPaymentRequestedEvent e) {
+            return e.order().orderNumber();
+        } else if (event instanceof MarketOrderPaymentCompletedEvent e) {
+            return e.order().orderNumber();
+        } else if (event instanceof MarketOrderPaymentRequestCanceledEvent e) {
+            return e.dto().orderId();
+        } else if (event instanceof SettlementCompletedEvent e) {
+            return String.valueOf(e.memberID());
+        } else if (event instanceof PaymentRefundCompletedEvent e) {
+            return e.dto().orderId();
+        } else if (event instanceof MarketOrderBeforePaymentCanceledEvent e) {
+            return e.dto().orderId();
+        } else if (event instanceof MarketOrderDeletedEvent e) {
+            return e.dto().orderNumber();
+        } else if (event instanceof MarketOrderSettlementEvent e) {
+            return e.items().isEmpty() ? null : e.items().get(0).orderNo();
+        } else if (event instanceof MarketOrderStockChangedEvent e) {
+            return e.orderNumber();
+        } else if (event instanceof PaymentCompletedEvent e) {
+            return e.payment().orderId();
+        }
+
+        return null;
+    }
 }
