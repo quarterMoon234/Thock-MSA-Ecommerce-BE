@@ -38,6 +38,9 @@ public class ProductKafkaDlqConfig {
     @Value("${product.dlq.retry.max-attempts:2}")
     private long dlqRetryMaxAttempts;
 
+    @Value("${product.kafka.listener.concurrency:1}")
+    private int productKafkaListenerConcurrency;
+
     public ProductKafkaDlqConfig(
             @Qualifier("productConsumerFactory") ConsumerFactory<String, Object> consumerFactory,
             @Qualifier("productKafkaTemplate") KafkaTemplate<String, Object> kafkaTemplate
@@ -113,6 +116,7 @@ public class ProductKafkaDlqConfig {
                 new ConcurrentKafkaListenerContainerFactory<>();
 
         factory.setConsumerFactory(consumerFactory);
+        factory.setConcurrency(productKafkaListenerConcurrency);
         factory.getContainerProperties().setAckMode(ContainerProperties.AckMode.RECORD);
         factory.setCommonErrorHandler(productKafkaErrorHandler); // 에러 핸들러 장착!
 
