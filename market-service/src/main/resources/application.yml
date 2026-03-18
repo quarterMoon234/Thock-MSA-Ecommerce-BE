@@ -73,6 +73,11 @@ market:
     enabled: true
     collect-interval-ms: 10000
     consumer-group-id: market-service
+  kafka:
+    topics:
+      stock-changed:
+        partitions: 1
+        replicas: 1
 
 # JWT 설정
 jwt:
