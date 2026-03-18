@@ -62,6 +62,8 @@ product:
       max-attempts: 2
   kafka:
     consumer-group: product-service
+    listener:
+      concurrency: 1
   metrics:
     enabled: true
     collect-interval-ms: 10000
