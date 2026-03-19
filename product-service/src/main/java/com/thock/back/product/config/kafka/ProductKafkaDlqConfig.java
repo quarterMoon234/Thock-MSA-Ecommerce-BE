@@ -25,6 +25,8 @@ import org.springframework.util.backoff.FixedBackOff;
  이 설정이 완료되면, @KafkaListener(containerFactory = "productKafkaListenerContainerFactory")를 사용하는 모든 메서드는 여기서 정의한 DLQ 정책을 따르게 됩니다.
  **/
 
+
+// 클래스명만 보면 DLQ 설정 클래스 같은데 사실 KafkaConfig에 DLQ를 얹은 느낌? 여기서 컨슈머 개수 설정 등도 다 다룬다. 사실 기본 밥에 DLQ는 조미료 첨가한 느낌
 @Configuration
 public class ProductKafkaDlqConfig {
 
@@ -37,6 +39,9 @@ public class ProductKafkaDlqConfig {
 
     @Value("${product.dlq.retry.max-attempts:2}")
     private long dlqRetryMaxAttempts;
+
+    @Value("${product.kafka.listener.concurrency:1}")
+    private int productKafkaListenerConcurrency;
 
     public ProductKafkaDlqConfig(
             @Qualifier("productConsumerFactory") ConsumerFactory<String, Object> consumerFactory,
@@ -113,6 +118,7 @@ public class ProductKafkaDlqConfig {
                 new ConcurrentKafkaListenerContainerFactory<>();
 
         factory.setConsumerFactory(consumerFactory);
+        factory.setConcurrency(productKafkaListenerConcurrency);
         factory.getContainerProperties().setAckMode(ContainerProperties.AckMode.RECORD);
         factory.setCommonErrorHandler(productKafkaErrorHandler); // 에러 핸들러 장착!
 

@@ -10,6 +10,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.kafka.support.KafkaHeaders;
+import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,16 +34,31 @@ public class ProductKafkaListener {
             containerFactory = "productKafkaListenerContainerFactory"
     )
     @Transactional
-    public void handle(MarketOrderStockChangedEvent event) {
+    public void handle(
+            MarketOrderStockChangedEvent event,
+            @Header(KafkaHeaders.RECEIVED_PARTITION) int partition, // 파티션 번호
+            @Header(KafkaHeaders.RECEIVED_KEY) String messageKey // 메세지 키
+    ) {
         String key = keyResolver.stockChanged(event);
         if (!shouldProcess(KafkaTopics.MARKET_ORDER_STOCK_CHANGED, key)) {
-            log.info("Duplicate stock event ignored. orderNumber={}, eventType={}", event.orderNumber(), event.eventType());
+            log.info("Duplicate stock event ignored. orderNumber={}, eventType={}, partition={}, messageKey={}, thread={}",
+                    event.orderNumber(),
+                    event.eventType(),
+                    partition,
+                    messageKey,
+                    Thread.currentThread().getName()); // 컨슈머도 사실은 하나의 스레드가 돌고 있는 것이므로 이벤트를 받은 컨슈머가 무슨 스레드인지 파악하기 위한 용도
+
             return;
         }
 
         productStockService.handle(event);
-        log.info("Stock event processed. orderNumber={}, eventType={}, itemCount={}",
-                event.orderNumber(), event.eventType(), event.items().size());
+        log.info("Stock event processed. orderNumber={}, eventType={}, itemCount={}, partition={}, messageKey={}, thread={}",
+                event.orderNumber(),
+                event.eventType(),
+                event.items().size(),
+                partition,
+                messageKey,
+                Thread.currentThread().getName());
     }
 
     // 이벤트의 중복 처리를 방지하기 위해 InboxGuard를 사용하여 이벤트 처리 여부를 결정하는 메서드
