@@ -15,6 +15,10 @@ product:
     retry:
       interval-ms: ${PRODUCT_DLQ_RETRY_INTERVAL_MS:1000}
       max-attempts: ${PRODUCT_DLQ_RETRY_MAX_ATTEMPTS:2}
+  kafka:
+    consumer-group: ${PRODUCT_KAFKA_CONSUMER_GROUP:product-service}
+    listener:
+      concurrency: ${PRODUCT_KAFKA_LISTENER_CONCURRENCY:1}
   outbox:
     enabled: ${PRODUCT_OUTBOX_ENABLED:true}
     max-retries: ${PRODUCT_OUTBOX_MAX_RETRIES:10}
