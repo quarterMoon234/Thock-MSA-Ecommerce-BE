@@ -46,7 +46,9 @@ public class ProductManageService {
                 .name(product.getName())
                 .price(product.getPrice())
                 .salePrice(product.getSalePrice())
+                .description(product.getDescription())
                 .stock(product.getStock())
+                .reservedStock(product.getReservedStock())
                 .imageUrl(product.getImageUrl())
                 .productState(product.getState().name())
                 .eventType(ProductEventType.UPDATE)
@@ -64,11 +66,27 @@ public class ProductManageService {
         Long deletedId = product.getId();
         Long sellerId = product.getSellerId();
 
+        String name = product.getName();
+        Long price = product.getPrice();
+        Long salePrice = product.getSalePrice();
+        String description = product.getDescription();
+        Integer stock = product.getStock();
+        Integer reservedStock = product.getReservedStock();
+        String imageUrl = product.getImageUrl();
+
         productRepository.delete(product);
 
         productEventPublisher.publish(ProductEvent.builder()
                 .productId(deletedId)
                 .sellerId(sellerId)
+                .name(name)
+                .price(price)
+                .salePrice(salePrice)
+                .description(description)
+                .stock(stock)
+                .reservedStock(reservedStock)
+                .imageUrl(imageUrl)
+                .productState("DELETED")
                 .eventType(ProductEventType.DELETE)
                 .build());
     }
