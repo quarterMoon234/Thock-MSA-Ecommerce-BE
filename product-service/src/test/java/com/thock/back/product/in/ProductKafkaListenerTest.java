@@ -65,7 +65,7 @@ class ProductKafkaListenerTest {
                 CONSUMER_GROUP
         )).thenReturn(true);
 
-        listener.handle(event);
+        listener.handle(event, 0, "ORDER-1");
 
         verify(productStockService).handle(event);
     }
@@ -83,7 +83,7 @@ class ProductKafkaListenerTest {
                 CONSUMER_GROUP
         )).thenReturn(false);
 
-        listener.handle(event);
+        listener.handle(event, 0, "ORDER-2");
 
         verify(productStockService, never()).handle(event);
     }
@@ -96,7 +96,7 @@ class ProductKafkaListenerTest {
         when(keyResolver.stockChanged(event)).thenReturn("stock:ORDER-3:COMMIT");
         when(inboxGuardProvider.getIfAvailable()).thenReturn(null);
 
-        listener.handle(event);
+        listener.handle(event, 0, "ORDER-3");
 
         verify(productStockService).handle(event);
         verifyNoInteractions(inboxGuard);
