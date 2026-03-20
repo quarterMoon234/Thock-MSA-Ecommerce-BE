@@ -1,6 +1,7 @@
 package com.thock.back.market.in.dto.res;
 
 import com.thock.back.market.domain.CartItem;
+import com.thock.back.market.domain.CartProductView;
 import com.thock.back.market.out.api.dto.ProductInfo;
 import io.swagger.v3.oas.annotations.media.Schema;
 
@@ -59,5 +60,25 @@ public record CartItemResponse (
                 totalSalePrice,
                 totalDiscountAmount
                 );
+    }
+
+    public static CartItemResponse from(CartItem item, CartProductView product) {
+        Long totalPrice = item.getQuantity() * product.getPrice();
+        Long totalSalePrice = item.getQuantity() * product.getSalePrice();
+        Long totalDiscountAmount = totalPrice - totalSalePrice;
+
+        return new CartItemResponse(
+                item.getId(),
+                item.getQuantity(),
+                product.getProductId(),
+                product.getName(),
+                product.getImageUrl(),
+                product.getPrice(),
+                product.getSalePrice(),
+                product.availableStock(),
+                totalPrice,
+                totalSalePrice,
+                totalDiscountAmount
+        );
     }
 }
