@@ -40,6 +40,14 @@ public class ProductCreateService {
         productEventPublisher.publish(ProductEvent.builder()
                 .productId(saved.getId())
                 .sellerId(saved.getSellerId())
+                .name(saved.getName())
+                .price(saved.getPrice())
+                .salePrice(saved.getSalePrice())
+                .description(saved.getDescription())
+                .stock(saved.getStock())
+                .reservedStock(saved.getReservedStock())
+                .imageUrl(saved.getImageUrl())
+                .productState(saved.getState().name())
                 .eventType(ProductEventType.CREATE)
                 .build());
 

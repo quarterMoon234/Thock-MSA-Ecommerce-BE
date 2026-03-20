@@ -11,6 +11,7 @@ public record ProductEvent(
         Long salePrice,
         String description,
         Integer stock,
+        Integer reservedStock,
         String imageUrl,
         String productState,
         ProductEventType eventType  // "CREATE", "UPDATE", "DELETE"

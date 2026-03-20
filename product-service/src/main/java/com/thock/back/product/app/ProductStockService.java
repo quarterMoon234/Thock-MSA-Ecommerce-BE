@@ -3,10 +3,13 @@ package com.thock.back.product.app;
 import com.thock.back.global.exception.CustomException;
 import com.thock.back.global.exception.ErrorCode;
 import com.thock.back.product.domain.entity.Product;
+import com.thock.back.product.messaging.publisher.ProductEventPublisher;
 import com.thock.back.product.out.ProductRepository;
 import com.thock.back.shared.market.domain.StockEventType;
 import com.thock.back.shared.market.dto.StockOrderItemDto;
 import com.thock.back.shared.market.event.MarketOrderStockChangedEvent;
+import com.thock.back.shared.product.event.ProductEvent;
+import com.thock.back.shared.product.event.ProductEventType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,6 +23,8 @@ import java.util.stream.Collectors;
 public class ProductStockService {
 
     private final ProductRepository productRepository;
+
+    private final ProductEventPublisher productEventPublisher;
 
     // 주문의 재고 변경 이벤트 처리 (예약, 해제, 커밋)
     @Transactional
@@ -66,8 +71,22 @@ public class ProductStockService {
             } else {
                 throw new CustomException(ErrorCode.INVALID_REQUEST);
             }
-
         }
 
+        for (Product product : products) {
+            productEventPublisher.publish(ProductEvent.builder()
+                    .productId(product.getId())
+                    .sellerId(product.getSellerId())
+                    .name(product.getName())
+                    .price(product.getPrice())
+                    .salePrice(product.getSalePrice())
+                    .description(product.getDescription())
+                    .stock(product.getStock())
+                    .reservedStock(product.getReservedStock())
+                    .imageUrl(product.getImageUrl())
+                    .productState(product.getState().name())
+                    .eventType(ProductEventType.UPDATE)
+                    .build());
+        }
     }
 }
