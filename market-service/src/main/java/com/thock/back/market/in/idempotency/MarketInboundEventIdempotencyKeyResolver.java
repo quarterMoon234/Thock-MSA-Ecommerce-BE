@@ -4,6 +4,7 @@ import com.thock.back.shared.member.event.MemberJoinedEvent;
 import com.thock.back.shared.member.event.MemberModifiedEvent;
 import com.thock.back.shared.payment.event.PaymentCompletedEvent;
 import com.thock.back.shared.payment.event.PaymentRefundCompletedEvent;
+import com.thock.back.shared.product.event.ProductEvent;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -37,6 +38,22 @@ public class MarketInboundEventIdempotencyKeyResolver {
                 "payment-refund-completed",
                 event.dto().orderId(),
                 String.valueOf(event.dto().amount())
+        );
+    }
+
+    public String productChanged(ProductEvent event) {
+        return String.join(":",
+                "product-changed",
+                String.valueOf(event.productId()),
+                String.valueOf(event.eventType()),
+                String.valueOf(event.name()),
+                String.valueOf(event.price()),
+                String.valueOf(event.salePrice()),
+                String.valueOf(event.stock()),
+                String.valueOf(event.reservedStock()),
+                String.valueOf(event.productState()),
+                String.valueOf(event.imageUrl()),
+                String.valueOf(event.description())
         );
     }
 }
