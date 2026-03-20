@@ -10,10 +10,13 @@ import com.thock.back.shared.member.event.MemberJoinedEvent;
 import com.thock.back.shared.member.event.MemberModifiedEvent;
 import com.thock.back.shared.payment.event.PaymentCompletedEvent;
 import com.thock.back.shared.payment.event.PaymentRefundCompletedEvent;
+import com.thock.back.shared.product.event.ProductEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.kafka.support.KafkaHeaders;
+import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,7 +33,7 @@ public class MarketKafkaListener {
 
     @KafkaListener(topics = KafkaTopics.MEMBER_JOINED, groupId = "market-service")
     @Transactional
-    public void handle(MemberJoinedEvent event){
+    public void handle(MemberJoinedEvent event) {
         inboundMetrics.recordReceived(KafkaTopics.MEMBER_JOINED);
         if (!shouldProcess(KafkaTopics.MEMBER_JOINED, keyResolver.memberJoined(event))) {
             inboundMetrics.recordDuplicate(KafkaTopics.MEMBER_JOINED);
@@ -49,7 +52,7 @@ public class MarketKafkaListener {
 
     @KafkaListener(topics = KafkaTopics.MEMBER_MODIFIED, groupId = "market-service")
     @Transactional
-    public void handle(MemberModifiedEvent event){
+    public void handle(MemberModifiedEvent event) {
         inboundMetrics.recordReceived(KafkaTopics.MEMBER_MODIFIED);
         if (!shouldProcess(KafkaTopics.MEMBER_MODIFIED, keyResolver.memberModified(event))) {
             inboundMetrics.recordDuplicate(KafkaTopics.MEMBER_MODIFIED);
@@ -69,7 +72,7 @@ public class MarketKafkaListener {
     // 결제 완료가 되었을 때 payment 모듈에서 이벤트를 날리면 이벤트를 받아서 Order의 상태를 변경함
     @KafkaListener(topics = KafkaTopics.PAYMENT_COMPLETED, groupId = "market-service")
     @Transactional
-    public void handle(PaymentCompletedEvent event){
+    public void handle(PaymentCompletedEvent event) {
         inboundMetrics.recordReceived(KafkaTopics.PAYMENT_COMPLETED);
         if (!shouldProcess(KafkaTopics.PAYMENT_COMPLETED, keyResolver.paymentCompleted(event))) {
             inboundMetrics.recordDuplicate(KafkaTopics.PAYMENT_COMPLETED);
@@ -88,7 +91,7 @@ public class MarketKafkaListener {
 
     @KafkaListener(topics = KafkaTopics.PAYMENT_REFUND_COMPLETED, groupId = "market-service")
     @Transactional
-    public void handle(PaymentRefundCompletedEvent event){
+    public void handle(PaymentRefundCompletedEvent event) {
         inboundMetrics.recordReceived(KafkaTopics.PAYMENT_REFUND_COMPLETED);
         if (!shouldProcess(
                 KafkaTopics.PAYMENT_REFUND_COMPLETED,
@@ -105,6 +108,37 @@ public class MarketKafkaListener {
             inboundMetrics.recordProcessed(KafkaTopics.PAYMENT_REFUND_COMPLETED);
         } catch (Exception e) {
             inboundMetrics.recordFailed(KafkaTopics.PAYMENT_REFUND_COMPLETED);
+            throw e;
+        }
+    }
+
+    @KafkaListener(topics = KafkaTopics.PRODUCT_CHANGED, groupId = "market-service")
+    @Transactional
+    public void handle(
+            ProductEvent event,
+            @Header(KafkaHeaders.RECEIVED_PARTITION) int partition,
+            @Header(KafkaHeaders.OFFSET) long offset
+    ) {
+        inboundMetrics.recordReceived(KafkaTopics.PRODUCT_CHANGED);
+
+        String idempotencyKey = String.join(":",
+                "product-changed",
+                String.valueOf(partition),
+                String.valueOf(offset)
+        );
+
+        if (!shouldProcess(KafkaTopics.PRODUCT_CHANGED, idempotencyKey)) {
+            inboundMetrics.recordDuplicate(KafkaTopics.PRODUCT_CHANGED);
+            return;
+        }
+
+        try {
+            log.info("Received ProductEvent via Kafka: productId={}, eventType={}, partition={}, offset={}",
+                    event.productId(), event.eventType(), partition, offset);
+            marketFacade.syncCartProductView(event);
+            inboundMetrics.recordProcessed(KafkaTopics.PRODUCT_CHANGED);
+        } catch (Exception e) {
+            inboundMetrics.recordFailed(KafkaTopics.PRODUCT_CHANGED);
             throw e;
         }
     }
