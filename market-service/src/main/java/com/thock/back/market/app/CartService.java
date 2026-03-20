@@ -5,6 +5,8 @@ import com.thock.back.global.exception.CustomException;
 import com.thock.back.global.exception.ErrorCode;
 import com.thock.back.market.domain.Cart;
 import com.thock.back.market.domain.CartItem;
+import com.thock.back.market.domain.CartProductView;
+import com.thock.back.market.domain.CartProductViewRepository;
 import com.thock.back.market.domain.MarketMember;
 import com.thock.back.market.in.dto.req.CartItemAddRequest;
 import com.thock.back.market.in.dto.res.CartItemListResponse;
@@ -18,7 +20,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
@@ -26,6 +27,7 @@ import java.util.stream.Collectors;
 @Slf4j
 public class CartService {
     private final MarketSupport marketSupport;
+    private final CartProductViewRepository cartProductViewRepository;
 
     // 장바구니 조회
     @Transactional(readOnly = true)
@@ -49,40 +51,21 @@ public class CartService {
                 .map(CartItem::getProductId)
                 .toList();
 
-        // 여러 개 조회 : getProducts() 사용
-        List<ProductInfo> products = marketSupport.getProducts(productIds);
-
-        // Map으로 변환
-        Map<Long, ProductInfo> productMap = products.stream()
-                .collect(Collectors.toMap(ProductInfo::getId, Function.identity()));
+        List<CartProductView> products = cartProductViewRepository.findAllByProductIdIn(productIds);
+        Map<Long, CartProductView> productMap = products.stream()
+                .collect(Collectors.toMap(CartProductView::getProductId, product -> product));
 
         // CartItemResponse 생성
         List<CartItemResponse> items = cart.getItems().stream()
                 .map(cartItem -> {
-                    ProductInfo product = productMap.get(cartItem.getProductId());
+                    CartProductView product = productMap.get(cartItem.getProductId());
 
                     if (product == null) {
-                        log.warn("장바구니에 있지만 상품 정보가 없음: productId={}", cartItem.getProductId());
+                        log.warn("장바구니에 있지만 CQRS projection이 없음: productId={}", cartItem.getProductId());
                         return null;
                     }
 
-                    Long totalPrice = cartItem.getQuantity() * product.getPrice();
-                    Long totalSalePrice = cartItem.getQuantity() * product.getSalePrice();
-                    Long discountAmount = totalPrice - totalSalePrice;
-
-                    return new CartItemResponse(
-                            cartItem.getId(),
-                            cartItem.getQuantity(),
-                            product.getId(),
-                            product.getName(),
-                            product.getImageUrl(),
-                            product.getPrice(),
-                            product.getSalePrice(),
-                            product.availableStock(),
-                            totalPrice,
-                            totalSalePrice,
-                            discountAmount
-                    );
+                    return CartItemResponse.from(cartItem, product);
                 })
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
