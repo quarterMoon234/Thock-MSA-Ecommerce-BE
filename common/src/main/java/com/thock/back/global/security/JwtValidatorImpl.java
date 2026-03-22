@@ -15,18 +15,17 @@ import java.nio.charset.StandardCharsets;
 public class JwtValidatorImpl implements JwtValidator {
 
     protected final SecretKey key;
+    private final String issuer;
 
     public JwtValidatorImpl(JwtProperties props) {
         this.key = Keys.hmacShaKeyFor(props.secret().getBytes(StandardCharsets.UTF_8));
+        this.issuer = props.issuer();
     }
 
     @Override
     public boolean validate(String token) {
         try {
-            Jwts.parser()
-                    .verifyWith(key)
-                    .build()
-                    .parseSignedClaims(token);
+            parseClaims(token);
             return true;
         } catch (JwtException | IllegalArgumentException e) {
             return false;
@@ -50,10 +49,19 @@ public class JwtValidatorImpl implements JwtValidator {
 
     // 토큰에서 Claims 추출 (검증 포함)
     private Claims getClaims(String token) {
-        return Jwts.parser()
-                .verifyWith(key)
+        return parseClaims(token).getPayload();
+    }
+
+    private io.jsonwebtoken.Jws<Claims> parseClaims(String token) {
+        var parserBuilder = Jwts.parser()
+                .verifyWith(key);
+
+        if (issuer != null && !issuer.isBlank()) {
+            parserBuilder.requireIssuer(issuer);
+        }
+
+        return parserBuilder
                 .build()
-                .parseSignedClaims(token)
-                .getPayload();
+                .parseSignedClaims(token);
     }
 }
