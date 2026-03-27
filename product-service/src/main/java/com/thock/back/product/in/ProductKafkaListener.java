@@ -37,7 +37,7 @@ public class ProductKafkaListener {
     public void handle(
             MarketOrderStockChangedEvent event,
             @Header(KafkaHeaders.RECEIVED_PARTITION) int partition, // 파티션 번호
-            @Header(KafkaHeaders.RECEIVED_KEY) String messageKey // 메세지 키
+            @Header(value = KafkaHeaders.RECEIVED_KEY, required = false) String messageKey // 메세지 키
     ) {
         String key = keyResolver.stockChanged(event);
         if (!shouldProcess(KafkaTopics.MARKET_ORDER_STOCK_CHANGED, key)) {
