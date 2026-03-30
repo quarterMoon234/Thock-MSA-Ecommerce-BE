@@ -14,10 +14,7 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 
 @Repository
-public interface ProductRepository extends JpaRepository<Product, Long> {
-
-    // 상품명으로 검색 (부분 일치)
-    List<Product> findByNameContaining(String keyword);
+public interface ProductRepository extends JpaRepository<Product, Long>, ProductRepositoryCustom {
 
     // 카테고리로 검색 (페이징)
     Page<Product> findByCategory(Category category, Pageable pageable);
