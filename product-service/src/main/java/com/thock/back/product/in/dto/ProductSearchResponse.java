@@ -2,14 +2,14 @@ package com.thock.back.product.in.dto;
 
 import com.thock.back.product.domain.entity.Product;
 
-public record ProductListResponse (
+public record ProductSearchResponse(
         Long id,
         String name,
         String imageUrl,
         Long price,
-        String nickname
+        String seller
 ) {
-    public ProductListResponse(Product product) {
+    public ProductSearchResponse(Product product) {
         this(
                 product.getId(),
                 product.getName(),

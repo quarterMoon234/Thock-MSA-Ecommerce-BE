@@ -5,7 +5,8 @@ import com.thock.back.global.exception.ErrorCode;
 import com.thock.back.product.domain.Category;
 import com.thock.back.product.domain.entity.Product;
 import com.thock.back.product.in.dto.ProductDetailResponse;
-import com.thock.back.product.in.dto.ProductListResponse;
+import com.thock.back.product.in.dto.ProductSearchResponse;
+import com.thock.back.product.in.dto.ProductSearchRequest;
 import com.thock.back.product.in.dto.internal.ProductInternalResponse;
 import com.thock.back.product.out.ProductRepository;
 import lombok.RequiredArgsConstructor;
@@ -22,24 +23,15 @@ import java.util.List;
 public class ProductQueryService {
     private final ProductRepository productRepository;
 
-    public Page<ProductListResponse> searchProductsByCategory(Category category, Pageable pageable) {
+    public Page<ProductSearchResponse> searchProductsByCategory(Category category, Pageable pageable) {
         return productRepository.findByCategory(category, pageable)
-                .map(ProductListResponse::new);
+                .map(ProductSearchResponse::new);
     }
 
     public ProductDetailResponse getProductById(Long id) {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new CustomException(ErrorCode.PRODUCT_NOT_FOUND));
         return new ProductDetailResponse(product);
-    }
-
-    public List<ProductListResponse> searchProductsByKeyword(String keyword) {
-        if (keyword == null || keyword.isBlank()) {
-            return List.of();
-        }
-        return productRepository.findByNameContaining(keyword).stream()
-                .map(ProductListResponse::new)
-                .toList();
     }
 
     public List<ProductInternalResponse> getProductsByIds(List<Long> productIds) {
@@ -51,8 +43,12 @@ public class ProductQueryService {
                 .toList();
     }
 
-    public Page<ProductListResponse> getMyProducts(Long sellerId, Pageable pageable) {
+    public Page<ProductSearchResponse> searchProducts(ProductSearchRequest condition, Pageable pageable) {
+        return productRepository.search(condition, pageable);
+    }
+
+    public Page<ProductSearchResponse> getMyProducts(Long sellerId, Pageable pageable) {
         return productRepository.findBySellerId(sellerId, pageable)
-                .map(ProductListResponse::new);
+                .map(ProductSearchResponse::new);
     }
 }
