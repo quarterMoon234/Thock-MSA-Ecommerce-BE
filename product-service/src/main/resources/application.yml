@@ -48,6 +48,13 @@ springdoc:
   swagger-ui:
     enabled: false
 
+# Redis
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      timeout: 2s
+
 product:
   inbox:
     enabled: true
@@ -87,3 +94,6 @@ product:
       interval-ms: 3600000
       retention-days: 7
       batch-size: 500
+  cache:
+    enabled: ${PRODUCT_CACHE_ENABLED:false}
+    ttl-seconds: ${PRODUCT_CACHE_TTL_SECONDS:600}
