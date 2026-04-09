@@ -51,14 +51,26 @@ public class ProductKafkaListener {
             return;
         }
 
-        productStockService.handle(event);
-        log.info("Stock event processed. orderNumber={}, eventType={}, itemCount={}, partition={}, messageKey={}, thread={}",
-                event.orderNumber(),
-                event.eventType(),
-                event.items().size(),
-                partition,
-                messageKey,
-                Thread.currentThread().getName());
+        try {
+            productStockService.handle(event);
+            log.info("Stock event processed. orderNumber={}, eventType={}, itemCount={}, partition={}, messageKey={}, thread={}",
+                    event.orderNumber(),
+                    event.eventType(),
+                    event.items().size(),
+                    partition,
+                    messageKey,
+                    Thread.currentThread().getName());
+        } catch (Exception e) {
+            log.error("Stock event failed. orderNumber={}, eventType={}, itemCount={}, partition={}, messageKey={}, thread={}",
+                    event.orderNumber(),
+                    event.eventType(),
+                    event.items() == null ? 0 : event.items().size(),
+                    partition,
+                    messageKey,
+                    Thread.currentThread().getName(),
+                    e);
+            throw e;
+        }
     }
 
     // 이벤트의 중복 처리를 방지하기 위해 InboxGuard를 사용하여 이벤트 처리 여부를 결정하는 메서드
