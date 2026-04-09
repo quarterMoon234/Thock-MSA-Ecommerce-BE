@@ -87,6 +87,9 @@ services:
       MYSQL_USER: thock_product_db_user
       MYSQL_PASSWORD: ${PRODUCT_DB_PASSWORD}
       KAFKA_BOOTSTRAP_SERVERS: redpanda:29092
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      PRODUCT_CACHE_ENABLED: true
       PRODUCT_EVENT_PUBLISH_MODE: ${PRODUCT_EVENT_PUBLISH_MODE:-outbox}
       PRODUCT_KAFKA_LISTENER_CONCURRENCY: ${PRODUCT_KAFKA_LISTENER_CONCURRENCY:-1}
       PRODUCT_INBOX_ENABLED: ${PRODUCT_INBOX_ENABLED:-true}
@@ -117,6 +120,8 @@ services:
       mysql:
         condition: service_healthy
       redpanda:
+        condition: service_started
+      redis:
         condition: service_started
     networks:
       - internal
@@ -235,6 +240,15 @@ services:
       - internal
     volumes:
       - ./logs/settlement:/app/logs
+    restart: unless-stopped
+  # ==================== Redis ====================
+  redis:
+    image: redis:7.4-alpine
+    container_name: redis
+    ports:
+      - "6379:6379"
+    networks:
+      - internal
     restart: unless-stopped
 
   # ==================== Kafka ====================
