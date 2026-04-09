@@ -74,7 +74,7 @@ public class Product extends BaseIdAndTime {
         this.name = name;
         this.description = description;
         this.price = price;
-        this.salePrice = (salePrice != null) ? salePrice : price;
+        this.salePrice = resolveSalePrice(price, salePrice);
         this.stock = (stock != null) ? stock : 0;
         this.reservedStock = 0;
         this.imageUrl = imageUrl;
@@ -109,7 +109,7 @@ public class Product extends BaseIdAndTime {
 
         this.name = name;
         this.price = price;
-        this.salePrice = (salePrice != null) ? salePrice : price;
+        this.salePrice = resolveSalePrice(price, salePrice);
         this.stock = (stock != null) ? stock : 0;
         this.category = category;
         this.description = description;
@@ -181,5 +181,12 @@ public class Product extends BaseIdAndTime {
         if (quantity == null || quantity <= 0) {
             throw new CustomException(ErrorCode.PRODUCT_STOCK_QUANTITY_INVALID);
         }
+    }
+
+    private Long resolveSalePrice(Long price, Long salePrice) {
+        if (salePrice == null || salePrice <= 0) {
+            return price;
+        }
+        return salePrice;
     }
 }

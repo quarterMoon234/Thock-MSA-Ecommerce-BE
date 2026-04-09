@@ -3,6 +3,7 @@ package com.thock.back.market.in;
 
 import com.thock.back.global.security.AuthUser;
 import com.thock.back.global.security.AuthenticatedUser;
+import com.thock.back.global.exception.CustomException;
 import com.thock.back.market.app.MarketFacade;
 import com.thock.back.market.in.dto.req.OrderCancelRequest;
 import com.thock.back.market.in.dto.req.OrderCreateRequest;
@@ -88,8 +89,18 @@ public class ApiV1OrderController {
             @Valid @RequestBody OrderCreateRequest request) {
         Long memberId = user.memberId();
         log.info("Market Order API : createOrder / memberId = {}", memberId);
-        OrderCreateResponse response = marketFacade.createOrder(memberId, request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        try {
+            OrderCreateResponse response = marketFacade.createOrder(memberId, request);
+            return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        } catch (CustomException e) {
+            log.warn("주문 생성 실패 - memberId={}, cartItemCount={}, reason={}",
+                    memberId, request.cartItemIds() == null ? 0 : request.cartItemIds().size(), e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            log.error("주문 생성 실패 - memberId={}, cartItemCount={}",
+                    memberId, request.cartItemIds() == null ? 0 : request.cartItemIds().size(), e);
+            throw e;
+        }
     }
 
     @Operation(

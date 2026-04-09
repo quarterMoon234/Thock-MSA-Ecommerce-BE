@@ -65,10 +65,12 @@ export function setup() {
 
 export default function (data) {
   const productName = buildProductName(data.runId);
+  const price = Number(__ENV.PRICE || 1000);
+  const salePrice = Number(__ENV.SALE_PRICE || __ENV.PRICE || 1000);
   const payload = JSON.stringify({
     name: productName,
-    price: Number(__ENV.PRICE || 1000),
-    salePrice: Number(__ENV.SALE_PRICE || 0),
+    price,
+    salePrice,
     stock: Number(__ENV.STOCK || 5),
     category: __ENV.CATEGORY || 'KEYBOARD',
     description: `k6 outbox load ${productName}`,

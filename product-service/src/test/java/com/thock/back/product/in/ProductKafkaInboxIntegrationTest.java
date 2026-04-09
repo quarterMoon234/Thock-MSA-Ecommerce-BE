@@ -22,11 +22,13 @@ import org.springframework.kafka.listener.MessageListenerContainer;
 import org.springframework.kafka.test.EmbeddedKafkaBroker;
 import org.springframework.kafka.test.context.EmbeddedKafka;
 import org.springframework.kafka.test.utils.ContainerTestUtils;
-import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
+import io.micrometer.core.instrument.MeterRegistry;
+import org.springframework.test.annotation.DirtiesContext;
 
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.UUID;
 import java.util.function.BooleanSupplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -67,6 +69,9 @@ class ProductKafkaInboxIntegrationTest {
     @Autowired
     private EmbeddedKafkaBroker embeddedKafkaBroker;
 
+    @Autowired
+    private MeterRegistry meterRegistry;
+
     @BeforeEach
     void setUp() {
         for (MessageListenerContainer container : kafkaListenerEndpointRegistry.getListenerContainers()) {
@@ -76,17 +81,19 @@ class ProductKafkaInboxIntegrationTest {
 
     @AfterEach
     void tearDown() {
+        kafkaListenerEndpointRegistry.stop();
         productInboxEventRepository.deleteAllInBatch();
         productRepository.deleteAllInBatch();
     }
 
     @Test
-    @DisplayName("duplicate stock event is applied only once")
-    void handle_whenSameEventPublishedTwice_appliesStockChangeOnce() throws Exception {
+    @DisplayName("duplicate stock event published 100 times is applied only once")
+    void handle_whenSameEventPublishedHundredTimes_appliesStockChangeOnce() throws Exception {
+        String testId = UUID.randomUUID().toString();
         Product product = productRepository.save(Product.builder()
                 .sellerId(1L)
                 .category(Category.KEYBOARD)
-                .name("inbox-duplicate-test-product")
+                .name("inbox-duplicate-test-product-" + testId)
                 .description("duplicate inbox test")
                 .price(10000L)
                 .salePrice(9000L)
@@ -95,30 +102,44 @@ class ProductKafkaInboxIntegrationTest {
                 .build());
 
         Long productId = product.getId();
+        String orderNumber = "ORDER-DUP-" + testId;
 
         MarketOrderStockChangedEvent event = new MarketOrderStockChangedEvent(
-                "ORDER-DUP-1",
+                orderNumber,
                 StockEventType.RESERVE,
-                List.of(new StockOrderItemDto(productId, 2))
+                List.of(new StockOrderItemDto(productId, 1))
         );
 
-        kafkaTemplate.send(KafkaTopics.MARKET_ORDER_STOCK_CHANGED, "ORDER-DUP-1", event)
-                .get(5, TimeUnit.SECONDS);
-        kafkaTemplate.send(KafkaTopics.MARKET_ORDER_STOCK_CHANGED, "ORDER-DUP-1", event)
-                .get(5, TimeUnit.SECONDS);
+        int publishCount = 100;
+        for (int i = 0; i < publishCount; i++) {
+            kafkaTemplate.send(KafkaTopics.MARKET_ORDER_STOCK_CHANGED, orderNumber, event)
+                    .get(5, TimeUnit.SECONDS);
+        }
 
         waitUntil(() -> {
-            Product reloaded = productRepository.findById(productId).orElseThrow();
-            return reloaded.getReservedStock() == 2
-                    && reloaded.getStock() == 10
-                    && productInboxEventRepository.count() == 1;
-        }, 10_000L);
+            Product productAfterEvent = productRepository.findById(productId).orElseThrow();
+            double duplicateIgnoredCount = meterRegistry
+                    .find("product_inbox_duplicate_ignored_total")
+                    .counter()
+                    .count();
+            return productAfterEvent.getReservedStock() == 1
+                    && productAfterEvent.getStock() == 10
+                    && productInboxEventRepository.count() == 1
+                    && duplicateIgnoredCount >= publishCount - 1;
+        }, 20_000L);
 
-        Product reloaded = productRepository.findById(productId).orElseThrow();
+        Product productAfterEvent = productRepository.findById(productId).orElseThrow();
 
-        assertThat(reloaded.getReservedStock()).isEqualTo(2);
-        assertThat(reloaded.getStock()).isEqualTo(10);
+        assertThat(productAfterEvent.getReservedStock()).isEqualTo(1);
+        assertThat(productAfterEvent.getStock()).isEqualTo(10);
         assertThat(productInboxEventRepository.count()).isEqualTo(1);
+        System.out.printf(
+                "DUPLICATE_EVENTS_PUBLISHED=%d RESERVED_STOCK_APPLIED=%d INBOX_ROWS=%d DUPLICATE_APPLIED=%d%n",
+                publishCount,
+                productAfterEvent.getReservedStock(),
+                productInboxEventRepository.count(),
+                productAfterEvent.getReservedStock() - 1
+        );
     }
 
     private void waitUntil(BooleanSupplier condition, long timeoutMs) throws InterruptedException {
