@@ -10,6 +10,7 @@ import com.thock.back.product.in.dto.ProductDetailResponse;
 import com.thock.back.product.in.dto.ProductSearchResponse;
 import com.thock.back.product.in.dto.ProductSearchRequest;
 import com.thock.back.product.in.dto.internal.ProductInternalResponse;
+import com.thock.back.product.monitoring.ProductCacheMetrics;
 import com.thock.back.product.out.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,6 +30,7 @@ import java.util.Objects;
 public class ProductQueryService {
     private final ProductRepository productRepository;
     private final ProductCacheStore productCacheStore;
+    private final ProductCacheMetrics productCacheMetrics;
 
     public Page<ProductSearchResponse> searchProductsByCategory(Category category, Pageable pageable) {
         return productRepository.findByCategory(category, pageable)
@@ -39,10 +41,12 @@ public class ProductQueryService {
         return productCacheStore.findById(id)
                 .map(snapshot -> {
                     log.info("Product detail cache hit. productId={}", id);
+                    productCacheMetrics.recordDetailHit();
                     return snapshot.toDetailResponse();
                 })
                 .orElseGet(() -> {
                     log.info("Product detail cache miss. productId={}", id);
+                    productCacheMetrics.recordDetailMiss();
 
                     Product product = productRepository.findById(id)
                             .orElseThrow(() -> new CustomException(ErrorCode.PRODUCT_NOT_FOUND));
@@ -66,11 +70,17 @@ public class ProductQueryService {
                 .distinct()
                 .toList();
 
+        int hitCount = cachedSnapshots.size();
+        int missCount = missedProductIds.size();
+
         if (!missedProductIds.isEmpty()) {
             log.info("Product internal list cache miss. requestedCount={}, hitCount={}, missCount={}",
                     productIds.size(),
-                    cachedSnapshots.size(),
-                    missedProductIds.size());
+                    hitCount,
+                    missCount);
+
+            productCacheMetrics.recordInternalHit(hitCount);
+            productCacheMetrics.recordInternalMiss(missCount);
 
             List<ProductCacheSnapshot> missedSnapshots = productRepository.findAllByIdIn(missedProductIds).stream()
                     .map(ProductCacheSnapshot::from)
@@ -84,7 +94,9 @@ public class ProductQueryService {
         } else {
             log.info("Product internal list cache hit. requestedCount={}, hitCount={}, missCount=0",
                     productIds.size(),
-                    cachedSnapshots.size());
+                    hitCount);
+
+            productCacheMetrics.recordInternalHit(hitCount);
         }
 
         return productIds.stream()
