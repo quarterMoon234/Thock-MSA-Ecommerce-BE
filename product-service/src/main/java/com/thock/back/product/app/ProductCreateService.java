@@ -1,5 +1,7 @@
 package com.thock.back.product.app;
 
+import com.thock.back.product.cache.ProductCacheSnapshot;
+import com.thock.back.product.cache.ProductCacheSyncService;
 import com.thock.back.product.domain.command.ProductCreateCommand;
 import com.thock.back.product.domain.entity.Product;
 import com.thock.back.product.domain.service.ProductAuthorizationValidator;
@@ -17,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class ProductCreateService {
     private final ProductRepository productRepository;
     private final ProductEventPublisher productEventPublisher;
+    private final ProductCacheSyncService productCacheSyncService;
     private final ProductAuthorizationValidator authorizationValidator;
 
     public Long createProduct(ProductCreateCommand command) {
@@ -35,8 +38,13 @@ public class ProductCreateService {
                 .detail(command.detail())
                 .build();
 
+        // DB 저장
         Product saved = productRepository.save(product);
 
+        // 캐시 저장
+        productCacheSyncService.saveAfterCommit(ProductCacheSnapshot.from(saved));
+
+        // 상품 동기화 이벤트 발행
         productEventPublisher.publish(ProductEvent.builder()
                 .productId(saved.getId())
                 .sellerId(saved.getSellerId())
