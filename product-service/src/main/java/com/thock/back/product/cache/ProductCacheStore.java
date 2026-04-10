@@ -75,8 +75,7 @@ public class ProductCacheStore {
             String key = keys.get(i);
 
             try {
-                ProductCacheSnapshot snapshot =
-                        objectMapper.readValue(rawValue, ProductCacheSnapshot.class);
+                ProductCacheSnapshot snapshot = objectMapper.readValue(rawValue, ProductCacheSnapshot.class);
                 result.put(productId, snapshot);
             } catch (JsonProcessingException e) {
                 log.warn("Failed to deserialize product cache. key={}", key, e);
@@ -109,7 +108,7 @@ public class ProductCacheStore {
         }
 
         for (ProductCacheSnapshot snapshot : snapshots) {
-            save();
+            save(snapshot);
         }
     }
 
