@@ -57,6 +57,35 @@ TARGET=detail K6_DETAIL_BASE_URL=http://api-gateway:8080 \
 bash loadtest/run-product-cache-experiment.sh
 ```
 
+Run the pessimistic-lock stock reservation baseline before Redis Lua.
+
+```bash
+bash loadtest/run-product-stock-baseline-experiment.sh
+```
+
+This wrapper enables the product-service `experiment` profile and runs 100, 500, and 1,000 reservation attempts against a product with stock `10`.
+The baseline intentionally disables product Redis cache with `PRODUCT_CACHE_ENABLED=false` so the current DB pessimistic-lock path is measured.
+The default executor is `per-vu-iterations`, so each attempt is executed by a dedicated VU once.
+
+Useful overrides:
+
+- `STOCK_EXPERIMENT_COUNTS="100 500 1000"`
+- `INITIAL_STOCK=10`
+- `QUANTITY=1`
+- `STOCK_EXPERIMENT_EXECUTOR=per-vu`
+- `STOCK_EXPERIMENT_EXECUTOR=shared K6_VUS=200`
+
+Use these metrics as the baseline:
+
+- `stock_reservation_attempts_total`: business reservation request count
+- `stock_reservation_accepted_total`: should match available stock, for example `10`
+- `stock_reservation_rejected_total`: should be total attempts minus accepted count
+- `stock_reservation_failures_total`: should be `0`
+- `stock_reservation_duration_avg`
+- `stock_reservation_duration_p95`
+
+Do not use `http_reqs` as the reservation attempt count because k6 includes setup and teardown HTTP calls.
+
 Reset the product experiment state cleanly before each run.
 
 ```bash
