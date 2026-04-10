@@ -20,6 +20,13 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.MySQLDialect
 
+  # Redis
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      timeout: 2s
+
 # JWT 설정
 jwt:
   secret: ${JWT_SECRET_KEY}
@@ -87,3 +94,6 @@ product:
       interval-ms: 3600000
       retention-days: 7
       batch-size: 500
+  cache:
+    enabled: ${PRODUCT_CACHE_ENABLED:false}
+    ttl-seconds: ${PRODUCT_CACHE_TTL_SECONDS:600}

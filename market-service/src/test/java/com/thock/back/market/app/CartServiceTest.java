@@ -8,7 +8,6 @@ import com.thock.back.market.domain.CartProductViewRepository;
 import com.thock.back.market.domain.MarketMember;
 import com.thock.back.market.in.dto.req.CartItemAddRequest;
 import com.thock.back.market.in.dto.res.CartItemListResponse;
-import com.thock.back.market.out.api.dto.ProductInfo;
 import com.thock.back.shared.member.domain.MemberRole;
 import com.thock.back.shared.member.domain.MemberState;
 import org.junit.jupiter.api.DisplayName;
@@ -97,7 +96,7 @@ class CartServiceTest {
         Cart cart = new Cart(buyer);
         cart.addItem(100L, 4);
 
-        ProductInfo product = new ProductInfo(
+        CartProductView productView = new CartProductView(
                 100L,
                 2L,
                 "keyboard",
@@ -106,12 +105,13 @@ class CartServiceTest {
                 9000L,
                 5,
                 1,
-                "ON_SALE"
+                "ON_SALE",
+                false
         );
 
         given(marketSupport.findMemberById(memberId)).willReturn(Optional.of(buyer));
         given(marketSupport.findCartByBuyer(buyer)).willReturn(Optional.of(cart));
-        given(marketSupport.getProduct(100L)).willReturn(product);
+        given(cartProductViewRepository.findByProductId(100L)).willReturn(Optional.of(productView));
 
         assertThatThrownBy(() -> cartService.addCartItem(memberId, new CartItemAddRequest(100L, 1)))
                 .isInstanceOf(CustomException.class)
@@ -120,5 +120,6 @@ class CartServiceTest {
                     org.assertj.core.api.Assertions.assertThat(customException.getErrorCode())
                             .isEqualTo(ErrorCode.CART_PRODUCT_OUT_OF_STOCK);
                 });
+        verify(marketSupport, never()).getProduct(100L);
     }
 }

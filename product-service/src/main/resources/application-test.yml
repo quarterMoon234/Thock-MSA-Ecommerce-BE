@@ -26,3 +26,5 @@ jwt:
 product:
   inbox:
     enabled: false
+  cache:
+    enabled: false

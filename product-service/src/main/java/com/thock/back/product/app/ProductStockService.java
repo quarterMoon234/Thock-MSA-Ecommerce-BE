@@ -2,6 +2,8 @@ package com.thock.back.product.app;
 
 import com.thock.back.global.exception.CustomException;
 import com.thock.back.global.exception.ErrorCode;
+import com.thock.back.product.cache.ProductCacheSnapshot;
+import com.thock.back.product.cache.ProductCacheSyncService;
 import com.thock.back.product.domain.entity.Product;
 import com.thock.back.product.messaging.publisher.ProductEventPublisher;
 import com.thock.back.product.out.ProductRepository;
@@ -23,8 +25,8 @@ import java.util.stream.Collectors;
 public class ProductStockService {
 
     private final ProductRepository productRepository;
-
     private final ProductEventPublisher productEventPublisher;
+    private final ProductCacheSyncService productCacheSyncService;
 
     // 주문의 재고 변경 이벤트 처리 (예약, 해제, 커밋)
     @Transactional
@@ -72,6 +74,12 @@ public class ProductStockService {
                 throw new CustomException(ErrorCode.INVALID_REQUEST);
             }
         }
+
+        productCacheSyncService.saveAllAfterCommit(
+                products.stream()
+                        .map(ProductCacheSnapshot::from)
+                        .toList()
+        );
 
         for (Product product : products) {
             productEventPublisher.publish(ProductEvent.builder()
