@@ -26,6 +26,37 @@ Run the full experiment wrapper with Kafka topic counting and DB comparison.
 bash loadtest/run-product-create-experiment.sh
 ```
 
+Run the product Redis cache Before/After experiment.
+
+```bash
+TARGET=internal PRODUCT_IDS=1,2,3 K6_ITERATIONS=3000 K6_VUS=50 \
+bash loadtest/run-product-cache-experiment.sh
+```
+
+This wrapper runs the same `k6` load twice:
+
+- `cache-off`: restarts `product-service` with `PRODUCT_CACHE_ENABLED=false`
+- `cache-on`: restarts `product-service` with `PRODUCT_CACHE_ENABLED=true`
+- Redis is flushed before each phase with `redis-cli FLUSHDB`
+- The default executor is `shared-iterations`, so the cache-off/on business request count is fixed
+- Summary files are written under `loadtest/results/`
+
+Use `product_detail_reads_total` or `product_internal_list_reads_total` as the business request count.
+`http_reqs_count` includes setup/warm-up requests.
+
+Supported cache targets:
+
+- `TARGET=detail`: `GET /api/v1/products/{id}` directly to `product-service`
+- `TARGET=internal`: `POST /api/v1/products/internal/list` directly to `product-service`
+- `TARGET=mixed`: alternates detail and internal list reads
+
+If you want to measure the external route including Gateway overhead, override:
+
+```bash
+TARGET=detail K6_DETAIL_BASE_URL=http://api-gateway:8080 \
+bash loadtest/run-product-cache-experiment.sh
+```
+
 Reset the product experiment state cleanly before each run.
 
 ```bash
@@ -43,6 +74,14 @@ bash loadtest/reset-product-experiment.sh
 - `PRICE=1000`
 - `SALE_PRICE=0`
 - `STOCK=5`
+- `TARGET=internal`
+- `PRODUCT_IDS=1,2,3`
+- `PRODUCT_BATCH_SIZE=3`
+- `WARM_CACHE=true`
+- `K6_EXECUTOR=iterations`
+- `K6_ITERATIONS=3000`
+- `K6_VUS=50`
+- `K6_DETAIL_BASE_URL=http://product-service:8082`
 - `SUMMARY_PATH=/results/direct-baseline-summary.json`
 - `RUN_ID=1742000000`
 
