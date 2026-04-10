@@ -11,7 +11,6 @@ import com.thock.back.market.domain.MarketMember;
 import com.thock.back.market.in.dto.req.CartItemAddRequest;
 import com.thock.back.market.in.dto.res.CartItemListResponse;
 import com.thock.back.market.in.dto.res.CartItemResponse;
-import com.thock.back.market.out.api.dto.ProductInfo;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -87,11 +86,8 @@ public class CartService {
         Cart cart = marketSupport.findCartByBuyer(member)
                 .orElseThrow(() -> new CustomException(ErrorCode.CART_NOT_FOUND));
 
-        // Product 정보 조회 - API Call
-        ProductInfo product = marketSupport.getProduct(request.productId());
-        if (product == null) {
-            throw new CustomException(ErrorCode.CART_PRODUCT_API_FAILED);
-        }
+        CartProductView product = cartProductViewRepository.findByProductId(request.productId())
+                .orElseThrow(() -> new CustomException(ErrorCode.CART_PRODUCT_INFO_NOT_FOUND));
 
         int existingQuantity = cart.getItems().stream()
                 .filter(item -> item.getProductId().equals(request.productId()))

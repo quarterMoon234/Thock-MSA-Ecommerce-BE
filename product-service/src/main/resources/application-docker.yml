@@ -26,3 +26,5 @@ swagger:
 product:
   inbox:
     enabled: true
+  cache:
+    enabled: true
