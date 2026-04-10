@@ -89,7 +89,8 @@ services:
       KAFKA_BOOTSTRAP_SERVERS: redpanda:29092
       REDIS_HOST: redis
       REDIS_PORT: 6379
-      PRODUCT_CACHE_ENABLED: true
+      PRODUCT_CACHE_ENABLED: ${PRODUCT_CACHE_ENABLED:-true}
+      PRODUCT_CACHE_TTL_SECONDS: ${PRODUCT_CACHE_TTL_SECONDS:-600}
       PRODUCT_EVENT_PUBLISH_MODE: ${PRODUCT_EVENT_PUBLISH_MODE:-outbox}
       PRODUCT_KAFKA_LISTENER_CONCURRENCY: ${PRODUCT_KAFKA_LISTENER_CONCURRENCY:-1}
       PRODUCT_INBOX_ENABLED: ${PRODUCT_INBOX_ENABLED:-true}
@@ -398,6 +399,16 @@ services:
       PRICE: ${K6_PRICE:-1000}
       SALE_PRICE: ${K6_SALE_PRICE:-0}
       STOCK: ${K6_STOCK:-5}
+      TARGET: ${K6_TARGET:-internal}
+      WARM_CACHE: ${K6_WARM_CACHE:-true}
+      PRODUCT_IDS: ${K6_PRODUCT_IDS:-1,2,3}
+      PRODUCT_BATCH_SIZE: ${K6_PRODUCT_BATCH_SIZE:-3}
+      DETAIL_BASE_URL: ${K6_DETAIL_BASE_URL:-http://product-service:8082}
+      INTERNAL_BASE_URL: ${K6_INTERNAL_BASE_URL:-http://product-service:8082}
+      INTERNAL_AUTH_SECRET: ${SECURITY_SERVICE_INTERNAL_SECRET:-}
+      EXECUTOR: ${K6_EXECUTOR:-iterations}
+      ITERATIONS: ${K6_ITERATIONS:-3000}
+      VUS: ${K6_VUS:-50}
       BANK_CODE: ${K6_BANK_CODE:-088}
       ACCOUNT_NUMBER: ${K6_ACCOUNT_NUMBER:-1234567890}
       ACCOUNT_HOLDER: ${K6_ACCOUNT_HOLDER:-k6-seller}
@@ -415,6 +426,8 @@ services:
       member-service:
         condition: service_started
       product-service:
+        condition: service_started
+      redis:
         condition: service_started
     restart: "no"
 
