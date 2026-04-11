@@ -97,3 +97,8 @@ product:
   cache:
     enabled: ${PRODUCT_CACHE_ENABLED:false}
     ttl-seconds: ${PRODUCT_CACHE_TTL_SECONDS:600}
+  stock:
+    redis:
+      enabled: ${PRODUCT_STOCK_REDIS_ENABLED:false}
+      key-prefix: ${PRODUCT_STOCK_REDIS_KEY_PREFIX:product:stock}
+      reservation-ttl-seconds: ${PRODUCT_STOCK_REDIS_RESERVATION_TTL_SECONDS:1800}
