@@ -26,7 +26,16 @@ import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest(classes = ProductServiceApplication.class)
+@SpringBootTest(
+        classes = ProductServiceApplication.class,
+        properties = {
+                "product.event.publish-mode=outbox",
+                "product.outbox.enabled=true",
+                "product.outbox.poller.enabled=false",
+                "product.outbox.cleanup.enabled=false",
+                "product.inbox.enabled=false"
+        }
+)
 @ActiveProfiles("test")
 class ProductStockConcurrencyIntegrationTest {
 

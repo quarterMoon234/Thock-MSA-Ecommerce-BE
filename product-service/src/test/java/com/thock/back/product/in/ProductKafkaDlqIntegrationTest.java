@@ -36,8 +36,9 @@ import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doNothing;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
@@ -99,11 +100,17 @@ class ProductKafkaDlqIntegrationTest {
     @DisplayName("successful processing does not publish to the DLQ")
     void handle_whenProcessingSucceeds_doesNotSendToDlq() throws Exception {
         MarketOrderStockChangedEvent event = stockChangedEvent("ORDER-SUCCESS");
-        doNothing().when(productStockService).handle(any(MarketOrderStockChangedEvent.class));
+        when(productStockService.handleKafka(
+                any(MarketOrderStockChangedEvent.class),
+                anyString(),
+                anyString(),
+                anyString()
+        )).thenReturn(true);
 
         kafkaTemplate.send(KafkaTopics.MARKET_ORDER_STOCK_CHANGED, event).get(5, TimeUnit.SECONDS);
 
-        verify(productStockService, timeout(5000).times(1)).handle(any(MarketOrderStockChangedEvent.class));
+        verify(productStockService, timeout(5000).times(1))
+                .handleKafka(any(MarketOrderStockChangedEvent.class), anyString(), anyString(), anyString());
         assertThat(dlqProbe.poll(1500, TimeUnit.MILLISECONDS)).isNull();
     }
 
@@ -114,7 +121,7 @@ class ProductKafkaDlqIntegrationTest {
         MarketOrderStockChangedEvent event = stockChangedEvent("ORDER-CUSTOM-ERROR");
         doThrow(new CustomException(ErrorCode.INVALID_REQUEST))
                 .when(productStockService)
-                .handle(any(MarketOrderStockChangedEvent.class));
+                .handleKafka(any(MarketOrderStockChangedEvent.class), anyString(), anyString(), anyString());
 
         kafkaTemplate.send(KafkaTopics.MARKET_ORDER_STOCK_CHANGED, event).get(5, TimeUnit.SECONDS);
 
@@ -125,7 +132,8 @@ class ProductKafkaDlqIntegrationTest {
         assertThat(dlqMessage.originalTopic()).isEqualTo(KafkaTopics.MARKET_ORDER_STOCK_CHANGED);
         assertThat(dlqMessage.exceptionClass()).contains("ListenerExecutionFailedException");
         assertThat(dlqMessage.causeClass()).contains(CustomException.class.getName());
-        verify(productStockService, timeout(5000).times(1)).handle(any(MarketOrderStockChangedEvent.class));
+        verify(productStockService, timeout(5000).times(1))
+                .handleKafka(any(MarketOrderStockChangedEvent.class), anyString(), anyString(), anyString());
     }
 
     // 일반 RuntimeException 발생 시 최초 1회 + 재시도 2회 후 DLQ 전송 (총 3회 시도)
@@ -135,7 +143,7 @@ class ProductKafkaDlqIntegrationTest {
         MarketOrderStockChangedEvent event = stockChangedEvent("ORDER-RUNTIME-ERROR");
         doThrow(new RetryableKafkaProcessingException("temporary failure"))
                 .when(productStockService)
-                .handle(any(MarketOrderStockChangedEvent.class));
+                .handleKafka(any(MarketOrderStockChangedEvent.class), anyString(), anyString(), anyString());
 
         kafkaTemplate.send(KafkaTopics.MARKET_ORDER_STOCK_CHANGED, event).get(5, TimeUnit.SECONDS);
 
@@ -146,7 +154,8 @@ class ProductKafkaDlqIntegrationTest {
         assertThat(dlqMessage.originalTopic()).isEqualTo(KafkaTopics.MARKET_ORDER_STOCK_CHANGED);
         assertThat(dlqMessage.exceptionClass()).contains("ListenerExecutionFailedException");
         assertThat(dlqMessage.causeClass()).contains(RetryableKafkaProcessingException.class.getName());
-        verify(productStockService, timeout(10000).times(3)).handle(any(MarketOrderStockChangedEvent.class));
+        verify(productStockService, timeout(10000).times(3))
+                .handleKafka(any(MarketOrderStockChangedEvent.class), anyString(), anyString(), anyString());
     }
 
     private MarketOrderStockChangedEvent stockChangedEvent(String orderNumber) {
