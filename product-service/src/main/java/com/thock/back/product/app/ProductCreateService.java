@@ -7,6 +7,7 @@ import com.thock.back.product.domain.entity.Product;
 import com.thock.back.product.domain.service.ProductAuthorizationValidator;
 import com.thock.back.product.messaging.publisher.ProductEventPublisher;
 import com.thock.back.product.out.ProductRepository;
+import com.thock.back.product.stock.ProductStockRedisSyncService;
 import com.thock.back.shared.product.event.ProductEvent;
 import com.thock.back.shared.product.event.ProductEventType;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +22,7 @@ public class ProductCreateService {
     private final ProductEventPublisher productEventPublisher;
     private final ProductCacheSyncService productCacheSyncService;
     private final ProductAuthorizationValidator authorizationValidator;
+    private final ProductStockRedisSyncService productStockRedisSyncService;
 
     public Long createProduct(ProductCreateCommand command) {
 
@@ -40,6 +42,9 @@ public class ProductCreateService {
 
         // DB 저장
         Product saved = productRepository.save(product);
+
+        // Lua 용 동기화
+        productStockRedisSyncService.syncAfterCommit(saved);
 
         // 캐시 저장
         productCacheSyncService.saveAfterCommit(ProductCacheSnapshot.from(saved));

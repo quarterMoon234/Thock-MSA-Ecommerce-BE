@@ -86,6 +86,27 @@ Use these metrics as the baseline:
 
 Do not use `http_reqs` as the reservation attempt count because k6 includes setup and teardown HTTP calls.
 
+Run the Redis Lua stock gate Before/After wrapper.
+
+```bash
+bash loadtest/run-product-stock-redis-experiment.sh
+```
+
+This wrapper runs the same stock reservation scenario twice under identical counts:
+
+- `redis-off`: `PRODUCT_STOCK_REDIS_ENABLED=false`
+- `redis-on`: `PRODUCT_STOCK_REDIS_ENABLED=true`
+- Redis is flushed before each phase
+- The k6 setup creates a fresh product for each run and explicitly calls the experiment rebuild endpoint in the `redis-on` phase
+
+Useful overrides:
+
+- `STOCK_EXPERIMENT_COUNTS="1000"`
+- `INITIAL_STOCK=10`
+- `QUANTITY=1`
+- `STOCK_EXPERIMENT_EXECUTOR=per-vu`
+- `STOCK_EXPERIMENT_EXECUTOR=shared K6_VUS=200`
+
 Reset the product experiment state cleanly before each run.
 
 ```bash
