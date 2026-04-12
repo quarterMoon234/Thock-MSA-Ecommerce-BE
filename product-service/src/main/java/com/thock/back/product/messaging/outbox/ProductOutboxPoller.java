@@ -37,7 +37,7 @@ import java.util.List;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-@ConditionalOnProperty(prefix = "product.event", name = "publish-mode", havingValue = "outbox", matchIfMissing = true)
+@ConditionalOnProperty(prefix = "product.outbox.poller", name = "enabled", havingValue = "true", matchIfMissing = true)
 public class ProductOutboxPoller {
 
     private static final int BATCH_SIZE = 100;
@@ -49,6 +49,9 @@ public class ProductOutboxPoller {
 
     @Value("${product.outbox.enabled:true}")
     private boolean outboxEnabled = true;
+
+    @Value("${product.event.publish-mode:outbox}")
+    private String publishMode = "outbox";
 
     @Value("${product.outbox.poller.after-send-delay-ms:0}")
     private long afterSendDelayMs = 0L;
@@ -65,7 +68,7 @@ public class ProductOutboxPoller {
     @Scheduled(fixedDelayString = "${product.outbox.poller.interval-ms:3000}")
     @Transactional
     public void pollAndPublish() {
-        if (!outboxEnabled) {
+        if (!outboxEnabled || !"outbox".equalsIgnoreCase(publishMode)) {
             return;
         }
 
