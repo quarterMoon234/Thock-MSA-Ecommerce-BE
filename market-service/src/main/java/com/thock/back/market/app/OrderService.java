@@ -24,7 +24,7 @@ public class OrderService {
      */
     @Transactional(readOnly = true)
     public List<OrderDetailResponse> getMyOrders(Long memberId) {
-        List<Order> orders = orderRepository.findByBuyerIdOrderByCreatedAtDesc(memberId);
+        List<Order> orders = orderRepository.findDetailsByBuyerIdOrderByCreatedAtDesc(memberId);
 
         return orders.stream()
                 .map(OrderDetailResponse::from)
@@ -36,7 +36,7 @@ public class OrderService {
      */
     @Transactional(readOnly = true)
     public OrderDetailResponse getOrderDetail(Long memberId, Long orderId) {
-        Order order = orderRepository.findById(orderId)
+        Order order = orderRepository.findDetailById(orderId)
                 .orElseThrow(() -> new CustomException(ErrorCode.ORDER_NOT_FOUND));
 
         // 본인 주문인지 확인
