@@ -1,0 +1,8 @@
+spring:
+  task:
+    scheduling:
+      enabled: false
+
+market:
+  metrics:
+    enabled: false
