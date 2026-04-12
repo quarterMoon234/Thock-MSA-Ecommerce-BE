@@ -35,6 +35,36 @@ public class ProductStockExperimentController {
         return ResponseEntity.ok(productStockExperimentService.reserve(request));
     }
 
+    @PostMapping("/products/{productId}/redis/rebuild")
+    public ResponseEntity<ProductStockExperimentProductResponse> rebuildProductRedisStock(
+            @PathVariable Long productId
+    ) {
+        return ResponseEntity.ok(productStockExperimentService.rebuildProductRedisStock(productId));
+    }
+
+    @PostMapping("/redis/rebuild-all")
+    public ResponseEntity<ProductStockExperimentRedisRebuildResponse> rebuildAllRedisStock() {
+        return ResponseEntity.ok(productStockExperimentService.rebuildAllRedisStock());
+    }
+
+    @GetMapping("/products/{productId}/redis")
+    public ResponseEntity<ProductStockExperimentRedisStateResponse> getProductRedisState(
+            @PathVariable Long productId
+    ) {
+        return ResponseEntity.ok(productStockExperimentService.getProductRedisState(productId));
+    }
+
+    @PostMapping("/metrics/reset")
+    public ResponseEntity<Void> resetMetrics() {
+        productStockExperimentService.resetMetrics();
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/metrics")
+    public ResponseEntity<ProductStockExperimentMetricsResponse> getMetrics() {
+        return ResponseEntity.ok(productStockExperimentService.getMetrics());
+    }
+
     @GetMapping("/products/{productId}")
     public ResponseEntity<ProductStockExperimentProductResponse> getProduct(@PathVariable Long productId) {
         return ResponseEntity.ok(productStockExperimentService.getProduct(productId));

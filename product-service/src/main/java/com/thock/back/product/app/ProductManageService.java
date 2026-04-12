@@ -9,12 +9,15 @@ import com.thock.back.product.domain.entity.Product;
 import com.thock.back.product.domain.service.ProductAuthorizationValidator;
 import com.thock.back.product.messaging.publisher.ProductEventPublisher;
 import com.thock.back.product.out.ProductRepository;
+import com.thock.back.product.stock.ProductStockRedisSyncService;
 import com.thock.back.shared.member.domain.MemberRole;
 import com.thock.back.shared.product.event.ProductEvent;
 import com.thock.back.shared.product.event.ProductEventType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
@@ -25,12 +28,15 @@ public class ProductManageService {
     private final ProductEventPublisher productEventPublisher;
     private final ProductCacheSyncService productCacheSyncService;
     private final ProductAuthorizationValidator authorizationValidator;
+    private final ProductStockRedisSyncService productStockRedisSyncService;
 
     public Long updateProduct(ProductUpdateCommand command) {
         Product product = productRepository.findById(command.productId())
                 .orElseThrow(() -> new CustomException(ErrorCode.PRODUCT_NOT_FOUND));
 
         authorizationValidator.validateOwnership(product, command.requesterId(), command.role());
+
+        Integer previousStock = product.getStock();
 
         // 상품 수정
         product.modify(
@@ -46,6 +52,11 @@ public class ProductManageService {
 
         // 캐시 수정
         productCacheSyncService.saveAfterCommit(ProductCacheSnapshot.from(product));
+
+        // Lua
+        if (!Objects.equals(previousStock, product.getStock())) {
+            productStockRedisSyncService.evictAfterCommit(product.getId());
+        }
 
         // 상품 동기화 이벤트 발행
         productEventPublisher.publish(ProductEvent.builder()
@@ -87,6 +98,9 @@ public class ProductManageService {
 
         // 캐시 삭제
         productCacheSyncService.evictAfterCommit(deletedId);
+
+        // Lua
+        productStockRedisSyncService.evictAfterCommit(deletedId);
 
         // 상품 동기화 이벤트 발행
         productEventPublisher.publish(ProductEvent.builder()

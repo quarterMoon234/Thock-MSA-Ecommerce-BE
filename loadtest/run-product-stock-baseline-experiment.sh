@@ -57,10 +57,16 @@ wait_for_product_service() {
     k6 run /scripts/wait-http.js
 }
 
+flush_redis() {
+  echo "redis_flushdb=true"
+  docker compose exec -T redis redis-cli FLUSHDB >/dev/null
+}
+
 docker compose up -d mysql redpanda redis
 
 PRODUCT_SERVICE_PROFILES_ACTIVE=docker,experiment \
 PRODUCT_CACHE_ENABLED=false \
+PRODUCT_STOCK_REDIS_ENABLED=false \
 docker compose up -d --build product-service
 
 wait_for_product_service
@@ -82,11 +88,15 @@ product_cache_enabled=false
 summary_path=${summary_path}
 EOF
 
+  flush_redis
+
   docker compose --profile loadtest run --no-deps --rm \
     -e RUN_ID="${RUN_ID}" \
     -e EXPERIMENT_NAME="${experiment_name}" \
     -e SUMMARY_PATH="${summary_path}" \
     -e PRODUCT_SERVICE_BASE_URL="${PRODUCT_SERVICE_BASE_URL}" \
+    -e PRODUCT_STOCK_REDIS_ENABLED=false \
+    -e REBUILD_REDIS_STOCK=false \
     -e INITIAL_STOCK="${INITIAL_STOCK}" \
     -e QUANTITY="${QUANTITY}" \
     -e STOCK_EXECUTOR="${EXECUTOR}" \

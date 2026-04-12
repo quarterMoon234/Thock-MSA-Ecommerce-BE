@@ -5,7 +5,10 @@ import com.thock.back.global.exception.ErrorCode;
 import com.thock.back.product.app.ProductStockService;
 import com.thock.back.product.domain.Category;
 import com.thock.back.product.domain.entity.Product;
+import com.thock.back.product.monitoring.ProductStockReservationPressureMetrics;
 import com.thock.back.product.out.ProductRepository;
+import com.thock.back.product.stock.ProductStockRedisRebuildService;
+import com.thock.back.product.stock.ProductStockRedisSyncService;
 import com.thock.back.shared.market.domain.StockEventType;
 import com.thock.back.shared.market.dto.StockOrderItemDto;
 import com.thock.back.shared.market.event.MarketOrderStockChangedEvent;
@@ -28,6 +31,9 @@ public class ProductStockExperimentService {
 
     private final ProductRepository productRepository;
     private final ProductStockService productStockService;
+    private final ProductStockRedisSyncService productStockRedisSyncService;
+    private final ProductStockRedisRebuildService productStockRedisRebuildService;
+    private final ProductStockReservationPressureMetrics productStockReservationPressureMetrics;
 
     @Transactional
     public ProductStockExperimentProductResponse createProduct(ProductStockExperimentCreateRequest request) {
@@ -44,6 +50,7 @@ public class ProductStockExperimentService {
                 .build();
 
         Product saved = productRepository.saveAndFlush(product);
+        productStockRedisSyncService.syncAfterCommit(saved);
 
         return ProductStockExperimentProductResponse.from(saved);
     }
@@ -76,5 +83,34 @@ public class ProductStockExperimentService {
                 .orElseThrow(() -> new CustomException(ErrorCode.PRODUCT_NOT_FOUND));
 
         return ProductStockExperimentProductResponse.from(product);
+    }
+
+    public ProductStockExperimentProductResponse rebuildProductRedisStock(Long productId) {
+        Product product = productStockRedisRebuildService.rebuild(productId);
+        return ProductStockExperimentProductResponse.from(product);
+    }
+
+    public ProductStockExperimentRedisRebuildResponse rebuildAllRedisStock() {
+        int rebuiltCount = productStockRedisRebuildService.rebuildAll();
+        return new ProductStockExperimentRedisRebuildResponse(rebuiltCount);
+    }
+
+    public ProductStockExperimentRedisStateResponse getProductRedisState(Long productId) {
+        return new ProductStockExperimentRedisStateResponse(
+                productId,
+                productStockRedisSyncService.isEnabled(),
+                productStockRedisSyncService.keyPrefix(),
+                productStockRedisSyncService.availableKey(productId),
+                productStockRedisSyncService.hasAvailableKey(productId),
+                productStockRedisSyncService.findAvailableValue(productId)
+        );
+    }
+
+    public ProductStockExperimentMetricsResponse getMetrics() {
+        return ProductStockExperimentMetricsResponse.from(productStockReservationPressureMetrics.snapshot());
+    }
+
+    public void resetMetrics() {
+        productStockReservationPressureMetrics.reset();
     }
 }
