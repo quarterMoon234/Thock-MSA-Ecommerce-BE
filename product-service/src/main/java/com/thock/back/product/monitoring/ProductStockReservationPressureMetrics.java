@@ -2,7 +2,6 @@ package com.thock.back.product.monitoring;
 
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import java.util.concurrent.atomic.AtomicInteger;
@@ -11,7 +10,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import com.thock.back.product.stock.ProductStockRedisReserveResult;
 
 @Component
-@ConditionalOnProperty(prefix = "product.metrics", name = "enabled", havingValue = "true", matchIfMissing = true)
 public class ProductStockReservationPressureMetrics {
 
     private final AtomicLong redisPreRejectedCount = new AtomicLong(0);

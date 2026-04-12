@@ -17,10 +17,18 @@ spring:
     hibernate:
       ddl-auto: create-drop
 
+  task:
+    scheduling:
+      enabled: false
+
 custom:
   global:
     productServiceUrl: http://localhost:8082
     paymentServiceUrl: http://localhost:8084
+
+market:
+  metrics:
+    enabled: false
 
 jwt:
   secret: thock-test-jwt-secret-key-which-is-long-enough-32chars

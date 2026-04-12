@@ -17,7 +17,7 @@ import java.util.List;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-@ConditionalOnProperty(prefix = "product.event", name = "publish-mode", havingValue = "outbox", matchIfMissing = true)
+@ConditionalOnProperty(prefix = "product.outbox.cleanup", name = "enabled", havingValue = "true", matchIfMissing = true)
 public class ProductOutboxCleanupScheduler {
 
     private final ProductOutboxEventRepository productOutboxEventRepository;
@@ -25,6 +25,9 @@ public class ProductOutboxCleanupScheduler {
 
     @Value("${product.outbox.enabled:true}")
     private boolean outboxEnabled = true;
+
+    @Value("${product.event.publish-mode:outbox}")
+    private String publishMode = "outbox";
 
     @Value("${product.outbox.cleanup.enabled:true}")
     private boolean cleanupEnabled = true;
@@ -38,7 +41,7 @@ public class ProductOutboxCleanupScheduler {
     @Scheduled(fixedDelayString = "${product.outbox.cleanup.interval-ms:3600000}") // 1시간마다 실행
     @Transactional
     public void cleanupSentEvents() {
-        if (!outboxEnabled || !cleanupEnabled) {
+        if (!outboxEnabled || !cleanupEnabled || !"outbox".equalsIgnoreCase(publishMode)) {
             return;
         }
 

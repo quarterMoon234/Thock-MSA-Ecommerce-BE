@@ -43,6 +43,9 @@ public class ProductKafkaDlqConfig {
     @Value("${product.kafka.listener.concurrency:1}")
     private int productKafkaListenerConcurrency;
 
+    @Value("${spring.kafka.listener.auto-startup:true}")
+    private boolean kafkaListenerAutoStartup;
+
     public ProductKafkaDlqConfig(
             @Qualifier("productConsumerFactory") ConsumerFactory<String, Object> consumerFactory,
             @Qualifier("productKafkaTemplate") KafkaTemplate<String, Object> kafkaTemplate
@@ -121,6 +124,7 @@ public class ProductKafkaDlqConfig {
         factory.setConcurrency(productKafkaListenerConcurrency);
         factory.getContainerProperties().setAckMode(ContainerProperties.AckMode.RECORD);
         factory.setCommonErrorHandler(productKafkaErrorHandler); // 에러 핸들러 장착!
+        factory.setAutoStartup(kafkaListenerAutoStartup);
 
         return factory;
     }
