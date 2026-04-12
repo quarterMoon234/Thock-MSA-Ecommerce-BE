@@ -16,6 +16,9 @@ spring:
   jpa:
     hibernate:
       ddl-auto: create-drop
+    properties:
+      hibernate:
+        generate_statistics: true
 
   task:
     scheduling:
