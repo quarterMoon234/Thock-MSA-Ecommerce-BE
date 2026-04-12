@@ -1,4 +1,13 @@
 spring:
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.kafka.KafkaAutoConfiguration
+
+  kafka:
+    bootstrap-servers: localhost:9092
+    listener:
+      auto-startup: false
+
   datasource:
     url: ${TEST_DB_URL:jdbc:mysql://localhost:3307/test_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul&characterEncoding=UTF-8}
     username: ${TEST_DB_USERNAME:test}
@@ -16,6 +25,10 @@ spring:
     job:
       enabled: false
 
+  task:
+    scheduling:
+      enabled: false
+
 # 테스트에서는 환경 변수 대신 application-test.yml에 JWT 시크릿 키를 직접 설정
 jwt:
   secret: thock-test-jwt-secret-key-which-is-long-enough-32chars
@@ -27,4 +40,6 @@ product:
   inbox:
     enabled: false
   cache:
+    enabled: false
+  metrics:
     enabled: false
