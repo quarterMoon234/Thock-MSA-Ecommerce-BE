@@ -24,6 +24,7 @@ import org.springframework.kafka.test.context.EmbeddedKafka;
 import org.springframework.kafka.test.utils.ContainerTestUtils;
 import org.springframework.test.context.ActiveProfiles;
 import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Counter;
 import org.springframework.test.annotation.DirtiesContext;
 
 import java.util.List;
@@ -40,7 +41,8 @@ import static org.assertj.core.api.Assertions.assertThat;
                 "spring.kafka.listener.auto-startup=true",
                 "spring.kafka.consumer.auto-offset-reset=earliest",
                 "product.inbox.enabled=true",
-                "product.inbox.cleanup.enabled=false"
+                "product.inbox.cleanup.enabled=false",
+                "product.metrics.enabled=true"
         }
 )
 @EmbeddedKafka(
@@ -118,10 +120,10 @@ class ProductKafkaInboxIntegrationTest {
 
         waitUntil(() -> {
             Product productAfterEvent = productRepository.findById(productId).orElseThrow();
-            double duplicateIgnoredCount = meterRegistry
+            Counter duplicateIgnoredCounter = meterRegistry
                     .find("product_inbox_duplicate_ignored_total")
-                    .counter()
-                    .count();
+                    .counter();
+            double duplicateIgnoredCount = duplicateIgnoredCounter == null ? 0 : duplicateIgnoredCounter.count();
             return productAfterEvent.getReservedStock() == 1
                     && productAfterEvent.getStock() == 10
                     && productInboxEventRepository.count() == 1

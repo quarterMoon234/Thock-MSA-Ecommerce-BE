@@ -2,6 +2,7 @@ spring:
   autoconfigure:
     exclude:
       - org.springframework.boot.autoconfigure.kafka.KafkaAutoConfiguration
+      - org.springframework.boot.autoconfigure.batch.BatchAutoConfiguration
 
   kafka:
     bootstrap-servers: localhost:9092
@@ -37,6 +38,14 @@ jwt:
   issuer: "thock-test"
 
 product:
+  event:
+    publish-mode: direct
+  outbox:
+    enabled: false
+    poller:
+      enabled: false
+    cleanup:
+      enabled: false
   inbox:
     enabled: false
   cache:
