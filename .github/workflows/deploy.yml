@@ -4,6 +4,12 @@ on:
   pull_request:
     branches: ["main", "dev"]
     types: [ closed ]
+  workflow_dispatch:
+    inputs:
+      services:
+        description: "Optional services to rebuild/redeploy. Use space or comma separated names, or 'all'. Leave empty for deploy config only."
+        required: false
+        type: string
 
 permissions:
   contents: read
@@ -43,6 +49,36 @@ jobs:
               core.setOutput('services_json', JSON.stringify(selectedServices));
               core.setOutput('services_space', selectedServices.join(' '));
             };
+
+            if (context.eventName === 'workflow_dispatch') {
+              const rawServices = (context.payload.inputs?.services || '').trim();
+              const requested = rawServices
+                ? rawServices.split(/[\s,]+/).filter(Boolean)
+                : [];
+
+              const selectAll = requested.includes('all');
+              const invalid = requested.filter(
+                (service) => service !== 'all' && !services.includes(service)
+              );
+
+              if (invalid.length > 0) {
+                core.setFailed(`Invalid services input: ${invalid.join(', ')}`);
+                return;
+              }
+
+              const selectedServices = selectAll
+                ? services
+                : services.filter((service) => requested.includes(service));
+
+              core.info(
+                selectedServices.length > 0
+                  ? `Manual dispatch services: ${selectedServices.join(', ')}`
+                  : 'Manual dispatch without service image changes.'
+              );
+
+              setOutputs(selectedServices, true);
+              return;
+            }
 
             const pr = context.payload.pull_request;
             if (!pr.merged) {
@@ -143,11 +179,13 @@ jobs:
   build-and-push:
     runs-on: ubuntu-latest
     needs: detect-changes
-    if: github.event.pull_request.merged == true && needs.detect-changes.outputs.any_service_changed == 'true'
+    if: >
+      needs.detect-changes.outputs.any_service_changed == 'true' &&
+      (github.event_name == 'workflow_dispatch' || github.event.pull_request.merged == true)
 
     # CHANGED: merge된 PR의 커밋 SHA를 이미지 태그로 사용
     env:
-      IMAGE_TAG: ${{ github.event.pull_request.merge_commit_sha }}
+      IMAGE_TAG: ${{ github.event.pull_request.merge_commit_sha || github.sha }}
 
     strategy:
       fail-fast: false
@@ -158,7 +196,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.merge_commit_sha }}
+          ref: ${{ github.event.pull_request.merge_commit_sha || github.sha }}
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -183,20 +221,20 @@ jobs:
     runs-on: ubuntu-latest
     needs: [detect-changes, build-and-push]
     if: >
-      github.event.pull_request.merged == true &&
       needs.detect-changes.outputs.any_deploy_changed == 'true' &&
+      (github.event_name == 'workflow_dispatch' || github.event.pull_request.merged == true) &&
       (needs.build-and-push.result == 'success' || needs.build-and-push.result == 'skipped')
 
     # CHANGED: deploy job에서도 동일 태그 사용
     env:
-      IMAGE_TAG: ${{ github.event.pull_request.merge_commit_sha }}
+      IMAGE_TAG: ${{ github.event.pull_request.merge_commit_sha || github.sha }}
       CHANGED_SERVICES: ${{ needs.detect-changes.outputs.services_space }}
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.merge_commit_sha }}
+          ref: ${{ github.event.pull_request.merge_commit_sha || github.sha }}
 
       - name: Load SSH key
         uses: webfactory/ssh-agent@v0.9.0
