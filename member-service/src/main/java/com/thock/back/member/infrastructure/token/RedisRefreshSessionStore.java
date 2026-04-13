@@ -80,5 +80,4 @@ public class RedisRefreshSessionStore implements RefreshSessionStore {
     private String memberKey(Long memberId) {
         return MEMBER_KEY_PREFIX + memberId;
     }
-
 }
