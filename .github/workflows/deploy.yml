@@ -263,6 +263,7 @@ jobs:
             compose up -d mysql redpanda redis
             compose pull \$CHANGED_SERVICES
             compose up -d --no-deps \$CHANGED_SERVICES
+            compose up -d nginx
 
             for svc in \$CHANGED_SERVICES; do
               case "\$svc" in
