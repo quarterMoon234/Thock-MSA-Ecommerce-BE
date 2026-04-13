@@ -222,6 +222,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [detect-changes, build-and-push]
     if: >
+      always() &&
       needs.detect-changes.outputs.any_deploy_changed == 'true' &&
       (github.event_name == 'workflow_dispatch' || github.event.pull_request.merged == true) &&
       (needs.build-and-push.result == 'success' || needs.build-and-push.result == 'skipped')
