@@ -64,3 +64,29 @@ AWS EC2/deploy-kubernetes/base/secrets.yaml
 AWS EC2/deploy-kubernetes/ingress/ip-whitelist-middleware.yaml
 AWS EC2/deploy-docker-compose/nginx/ssl/*.key
 AWS EC2/deploy-docker-compose/nginx/ssl/*.crt
+/deploy-docker-compose/nginx/certbot/conf/live/api.thock.site/cert.pem
+/deploy-docker-compose/nginx/certbot/conf/archive/api.thock.site/cert1.pem
+/deploy-docker-compose/nginx/certbot/conf/live/api.thock.site/chain.pem
+/deploy-docker-compose/nginx/certbot/conf/archive/api.thock.site/chain1.pem
+/deploy-docker-compose/compose.sh
+/deploy-docker-compose/monitoring/grafana/provisioning/dashboards/dashboards.yml
+/deploy-docker-compose/monitoring/grafana/provisioning/datasources/datasources.yml
+/deploy-docker-compose/nginx/certbot/conf/live/api.thock.site/fullchain.pem
+/deploy-docker-compose/nginx/certbot/conf/archive/api.thock.site/fullchain1.pem
+/deploy-docker-compose/docker/init-databases.sql
+/deploy-docker-compose/monitoring/grafana/dashboards/logs-dashboard.json
+/deploy-docker-compose/monitoring/loki/loki-config.yml
+/deploy-docker-compose/nginx/certbot/conf/accounts/acme-v02.api.letsencrypt.org/directory/82a476c42ef082ba62e6594e0da38653/meta.json
+/deploy-docker-compose/nginx/nginx.conf
+/deploy-docker-compose/monitoring/grafana/dashboards/payment-service-dashboard.json
+/deploy-docker-compose/nginx/certbot/conf/accounts/acme-v02.api.letsencrypt.org/directory/82a476c42ef082ba62e6594e0da38653/private_key.json
+/deploy-docker-compose/nginx/certbot/conf/live/api.thock.site/privkey.pem
+/deploy-docker-compose/nginx/certbot/conf/archive/api.thock.site/privkey1.pem
+/deploy-docker-compose/monitoring/prometheus/prometheus.yml
+/deploy-docker-compose/monitoring/promtail/promtail-config.yml
+/deploy-docker-compose/nginx/certbot/conf/live/api.thock.site/README
+/deploy-docker-compose/nginx/certbot/conf/live/README
+/deploy-docker-compose/nginx/certbot/conf/accounts/acme-v02.api.letsencrypt.org/directory/82a476c42ef082ba62e6594e0da38653/regr.json
+/deploy-docker-compose/nginx/ssl/server.crt
+/deploy-docker-compose/nginx/ssl/server.key
+/deploy-docker-compose/monitoring/grafana/dashboards/spring-boot-overview.json

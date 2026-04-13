@@ -11,6 +11,10 @@ spring:
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
 
+  flyway:
+    baseline-on-migrate: true
+    baseline-version: 0
+
   jpa:
     show-sql: true
     properties:
