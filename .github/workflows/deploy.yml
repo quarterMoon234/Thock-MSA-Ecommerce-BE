@@ -185,9 +185,8 @@ jobs:
             --exclude 'release-state.env' \
             --exclude 'logs/' \
             --exclude 'compose.sh' \
-            --exclude 'docker/' \
-            --exclude 'monitoring/' \
-            --exclude 'nginx/' \
+            --exclude 'nginx/ssl/' \
+            --exclude 'nginx/certbot/' \
             deploy-docker-compose/ \
             ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:~/deploy-docker-compose/
 
