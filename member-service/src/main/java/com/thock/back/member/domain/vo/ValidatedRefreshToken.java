@@ -1,7 +1,6 @@
 package com.thock.back.member.domain.vo;
 
 import com.thock.back.member.domain.entity.Member;
-import com.thock.back.member.domain.entity.RefreshToken;
 
 /**
  * 검증이 완료된 RefreshToken과 해당 Member를 함께 관리하는 Value Object
@@ -10,12 +9,16 @@ import com.thock.back.member.domain.entity.RefreshToken;
  **/
 
 public record ValidatedRefreshToken(
-        RefreshToken token,
+        String refreshTokenValue,
+        String jti,
         Member member
 ) {
     public ValidatedRefreshToken {
-        if (token == null) {
-            throw new IllegalArgumentException("Refresh token must not be null");
+        if (refreshTokenValue == null || refreshTokenValue.isBlank()) {
+            throw new IllegalArgumentException("Refresh token value must not be blank");
+        }
+        if (jti == null || jti.isBlank()) {
+            throw new IllegalArgumentException("Refresh token jti must not be blank");
         }
         if (member == null) {
             throw new IllegalArgumentException("Member must not be null");
