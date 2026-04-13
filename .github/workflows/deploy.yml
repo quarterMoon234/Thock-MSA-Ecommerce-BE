@@ -5,6 +5,7 @@ on:
     branches: ["main", "dev"]
     types: [ closed ]
   workflow_dispatch:
+    # Verification-only change to re-run deploy and smoke test through PR merge.
     inputs:
       services:
         description: "Optional services to rebuild/redeploy. Use space or comma separated names, or 'all'. Leave empty for deploy config only."
