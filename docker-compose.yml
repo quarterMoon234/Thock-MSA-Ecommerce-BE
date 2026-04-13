@@ -255,6 +255,14 @@ services:
     container_name: redis
     ports:
       - "6379:6379"
+    command:
+      - redis-server
+      - --appendonly
+      - "yes"
+      - --appendfsync
+      - everysec
+    volumes:
+      - redis-data:/data
     networks:
       - internal
     restart: unless-stopped
@@ -459,6 +467,7 @@ networks:
 # ==================== Volumes ====================
 volumes:
   mysql-data:
+  redis-data:
   redpanda-data:
   prometheus-data:
   loki-data:
