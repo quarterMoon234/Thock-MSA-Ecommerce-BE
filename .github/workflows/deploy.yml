@@ -163,6 +163,11 @@ jobs:
       CHANGED_SERVICES: ${{ needs.detect-changes.outputs.services_space }}
 
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
+
       - name: Load SSH key
         uses: webfactory/ssh-agent@v0.9.0
         with:
@@ -172,6 +177,18 @@ jobs:
         run: |
           mkdir -p ~/.ssh
           ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Sync deploy compose files
+        run: |
+          rsync -az --delete \
+            --exclude '.env' \
+            --exclude 'release-state.env' \
+            --exclude 'logs/' \
+            --exclude 'compose.sh' \
+            --exclude 'nginx/ssl/' \
+            --exclude 'nginx/certbot/' \
+            deploy-docker-compose/ \
+            ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:~/deploy-docker-compose/
 
       - name: Deploy to EC2 with Docker Compose
         run: |
@@ -243,6 +260,7 @@ jobs:
             done
 
             compose config >/dev/null
+            compose up -d mysql redpanda redis
             compose pull \$CHANGED_SERVICES
             compose up -d --no-deps \$CHANGED_SERVICES
 
