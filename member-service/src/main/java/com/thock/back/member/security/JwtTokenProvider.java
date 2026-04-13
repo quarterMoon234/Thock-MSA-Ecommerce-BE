@@ -1,18 +1,17 @@
 package com.thock.back.member.security;
 
 import com.thock.back.global.security.JwtProperties;
-import com.thock.back.global.security.JwtValidator;import com.thock.back.global.security.JwtValidatorImpl;import com.thock.back.shared.member.domain.MemberRole;
+import com.thock.back.global.security.JwtValidatorImpl;
+import com.thock.back.shared.member.domain.MemberRole;
 import com.thock.back.shared.member.domain.MemberState;
 import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.security.Keys;
-import org.springframework.context.annotation.Primary;import org.springframework.stereotype.Component;
+import org.springframework.context.annotation.Primary;
+import org.springframework.stereotype.Component;
 
-import javax.crypto.SecretKey;
-import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Date;
+import java.util.UUID;
 
 @Component
 @Primary
@@ -42,7 +41,7 @@ public class JwtTokenProvider extends JwtValidatorImpl {
     }
 
     // RefreshToken 생성
-    public String createRefreshToken(Long memberId) {
+    public String createRefreshToken(Long memberId, String jti) {
         Instant now = Instant.now();
         Instant exp = now.plusSeconds(props.refreshTokenExpSeconds());
 
@@ -51,8 +50,40 @@ public class JwtTokenProvider extends JwtValidatorImpl {
                 .subject(String.valueOf(memberId))
                 .issuedAt(Date.from(now))
                 .expiration(Date.from(exp))
+                .claim("type", "refresh")
+                .claim("jti", jti)
                 .signWith(key)
                 .compact();
+    }
+
+    public String createRefreshToken(Long memberId) {
+        return createRefreshToken(memberId, UUID.randomUUID().toString());
+    }
+
+    public String extractJti(String token) {
+        Claims claims = getClaims(token);
+        Object jti = claims.get("jti");
+        return jti == null ? null : String.valueOf(jti);
+    }
+
+    public String extractTokenType(String token) {
+        Claims claims = getClaims(token);
+        Object type = claims.get("type");
+        return type == null ? null : String.valueOf(type);
+    }
+
+    private Claims getClaims(String token) {
+        var parserBuilder = Jwts.parser()
+                .verifyWith(key);
+
+        if (props.issuer() != null && !props.issuer().isBlank()) {
+            parserBuilder.requireIssuer(props.issuer());
+        }
+
+        return parserBuilder
+                .build()
+                .parseSignedClaims(token)
+                .getPayload();
     }
 
     public long getAccessTokenExpSeconds() {
