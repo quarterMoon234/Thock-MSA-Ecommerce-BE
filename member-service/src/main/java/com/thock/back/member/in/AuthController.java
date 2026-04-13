@@ -8,6 +8,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -48,6 +49,32 @@ public class AuthController {
     ) {
         AuthenticationResult result = authApplicationService.refreshAccessToken(request.refreshToken());
         return ResponseEntity.ok(new TokenRefreshResponse(result.accessToken(), result.refreshToken()));
+    }
+
+    @Operation(summary = "로그아웃", description = "RefreshToken 세션을 무효화합니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "로그아웃 성공"),
+            @ApiResponse(responseCode = "401", description = "유효하지 않은 RefreshToken")
+    })
+    @PostMapping("/logout")
+    public ResponseEntity<Void> logout(
+            @Valid @RequestBody TokenLogoutRequest request
+    ) {
+        authApplicationService.logout(request.refreshToken());
+        return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+    }
+
+    @Operation(summary = "전체 로그아웃", description = "회원의 모든 RefreshToken 세션을 무효화합니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "전체 로그아웃 성공"),
+            @ApiResponse(responseCode = "401", description = "유효하지 않은 RefreshToken")
+    })
+    @PostMapping("/logout-all")
+    public ResponseEntity<Void> logoutAll(
+            @Valid @RequestBody TokenLogoutRequest request
+    ) {
+        authApplicationService.logoutAll(request.refreshToken());
+        return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
     }
 }
 

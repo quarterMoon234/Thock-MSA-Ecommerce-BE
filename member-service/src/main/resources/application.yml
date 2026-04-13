@@ -22,6 +22,11 @@ spring:
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
 
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+
 # JWT 설정 (공통)
 jwt:
   secret: ${JWT_SECRET_KEY}
