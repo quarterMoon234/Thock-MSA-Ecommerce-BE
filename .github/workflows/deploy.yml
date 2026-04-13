@@ -311,3 +311,25 @@ jobs:
               echo "[WARN] nginx container is not running. Skipping nginx reload."
             fi
           EOF
+
+      - name: Smoke test public gateway route
+        run: |
+          set -euo pipefail
+
+          TARGET_URL="http://${{ secrets.EC2_HOST }}/member-service/v3/api-docs"
+
+          for attempt in 1 2 3 4 5; do
+            echo "Smoke test attempt ${attempt}: ${TARGET_URL}"
+
+            response="$(curl --silent --show-error --location --max-time 15 "${TARGET_URL}" || true)"
+
+            if printf '%s' "${response}" | grep -q '"openapi"'; then
+              echo "Smoke test passed."
+              exit 0
+            fi
+
+            sleep 5
+          done
+
+          echo "[ERROR] public smoke test failed: ${TARGET_URL}"
+          exit 1
