@@ -1,24 +1,23 @@
 package com.thock.back.member.infrastructure.token;
 
 import com.thock.back.member.domain.entity.Member;
-import com.thock.back.member.domain.entity.RefreshToken;
 import com.thock.back.member.domain.vo.TokenPair;
-import com.thock.back.member.out.RefreshTokenRepository;
+import com.thock.back.member.out.RefreshSessionStore;
 import com.thock.back.member.security.JwtTokenProvider;
-import com.thock.back.member.security.RefreshTokenHasher;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
+import java.time.Duration;
+import java.util.UUID;
 
 /**
  * JWT 토큰 발급을 담당하는 Infrastructure Service
  * 책임:
  * - AccessToken 생성
- * - RefreshToken 생성 및 DB 저장
- * - 기존 RefreshToken 폐기
+ * - RefreshToken 생성 및 Redis 세션 저장
+ * - 기존 Refresh 세션 폐기
  * 위치 이유:
  * - 외부 시스템(JWT 라이브러리, DB)과 상호작용하는 인프라 로직
  * - 도메인 로직이 아닌 기술적 구현
@@ -30,8 +29,7 @@ import java.time.LocalDateTime;
 public class TokenIssuer {
 
     private final JwtTokenProvider jwtTokenProvider;
-    private final RefreshTokenHasher refreshTokenHasher;
-    private final RefreshTokenRepository refreshTokenRepository;
+    private final RefreshSessionStore refreshSessionStore;
 
     /**
      * 회원에게 새로운 토큰 쌍을 발급
@@ -52,8 +50,9 @@ public class TokenIssuer {
         );
 
         // RefreshToken 생성 및 저장
-        String refreshTokenValue = jwtTokenProvider.createRefreshToken(member.getId());
-        saveRefreshToken(member.getId(), refreshTokenValue);
+        String refreshJti = UUID.randomUUID().toString();
+        String refreshTokenValue = jwtTokenProvider.createRefreshToken(member.getId(), refreshJti);
+        saveRefreshSession(member.getId(), refreshJti);
 
         log.info("[TOKEN] Tokens issued for member. memberId={}]", member.getId());
 
@@ -61,26 +60,16 @@ public class TokenIssuer {
     }
 
     private void revokeExistingTokens(Long memberId) {
-        int revokeCount = refreshTokenRepository.revokeAllByMemberId(
-                memberId,
-                LocalDateTime.now()
-        );
-
-        if (revokeCount > 0) {
-            log.info("[TOKEN] Revoked {} existing tokens for member. memberId={}",
-                    revokeCount, memberId);
-        }
+        refreshSessionStore.revokeAll(memberId);
+        log.info("[TOKEN] Revoked existing refresh sessions for member. memberId={}", memberId);
     }
 
-    private void saveRefreshToken(Long memberId, String refreshTokenValue) {
-        String tokenHash = refreshTokenHasher.hash(refreshTokenValue);
-
-        RefreshToken refreshToken = RefreshToken.issue(
+    private void saveRefreshSession(Long memberId, String jti) {
+        refreshSessionStore.saveActive(
                 memberId,
-                tokenHash,
-                LocalDateTime.now().plusSeconds(jwtTokenProvider.getRefreshTokenExpSeconds())
+                jti,
+                Duration.ofSeconds(jwtTokenProvider.getRefreshTokenExpSeconds())
         );
-
-        refreshTokenRepository.save(refreshToken);
     }
 }
+

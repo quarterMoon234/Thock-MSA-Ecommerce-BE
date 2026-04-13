@@ -55,11 +55,15 @@ services:
       MYSQL_DATABASE: thock_member_db
       MYSQL_USER: thock_member_db_user
       MYSQL_PASSWORD: ${MEMBER_DB_PASSWORD}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
       KAFKA_BOOTSTRAP_SERVERS: redpanda:29092
       LOG_PATH: /app/logs
     depends_on:
       mysql:
         condition: service_healthy
+      redis:
+        condition: service_started
       redpanda:
         condition: service_started
     networks:
@@ -251,6 +255,14 @@ services:
     container_name: redis
     ports:
       - "6379:6379"
+    command:
+      - redis-server
+      - --appendonly
+      - "yes"
+      - --appendfsync
+      - everysec
+    volumes:
+      - redis-data:/data
     networks:
       - internal
     restart: unless-stopped
@@ -455,6 +467,7 @@ networks:
 # ==================== Volumes ====================
 volumes:
   mysql-data:
+  redis-data:
   redpanda-data:
   prometheus-data:
   loki-data:
