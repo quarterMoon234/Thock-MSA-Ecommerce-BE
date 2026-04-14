@@ -17,6 +17,12 @@ spring:
     job:
       enabled: false
 
+custom:
+  global:
+    internalBackUrl: http://localhost:8080
+    marketServiceUrl: http://localhost:8083
+    paymentServiceUrl: http://localhost:8084
+
 jwt:
   secret: thock-test-jwt-secret-key-which-is-long-enough-32chars
   issuer: "thock-test"

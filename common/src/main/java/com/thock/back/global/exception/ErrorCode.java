@@ -42,6 +42,7 @@ public enum ErrorCode {
 
     AUTH_CONTEXT_NOT_FOUND("AUTH-401-9", "인증 정보를 찾을 수 없습니다. 로그인이 필요합니다.", HttpStatus.UNAUTHORIZED),
 
+    ADMIN_FORBIDDEN("GLOBAL-403-1", "관리자 권한이 필요합니다.", HttpStatus.FORBIDDEN),
     // ===== 회원 =====
 
     INVALID_ROLE_PROMOTION("MEMBER-400-1", "일반 회원만 판매자로 전환할 수 있습니다.", HttpStatus.BAD_REQUEST),
