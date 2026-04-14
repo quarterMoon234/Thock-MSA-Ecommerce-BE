@@ -6,7 +6,7 @@ public record MarketOrderSummaryDto(
         Long orderId,
         String orderNumber,
         String state,
-        Long totalPrice,
+        Long totalSalePrice,
         LocalDateTime createdAt
 ) {
 }

@@ -16,7 +16,7 @@ import java.util.List;
 )
 public interface MarketOrderClient {
 
-    @GetMapping("/members/{memberId}/")
+    @GetMapping("/members/{memberId}/summaries")
     List<MarketOrderSummaryDto> getRecentOrderSummaries(
             @PathVariable Long memberId,
             @RequestParam int limit
