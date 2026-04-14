@@ -2,6 +2,7 @@ package com.thock.back.market.out.repository;
 
 import com.thock.back.market.domain.Order;
 import com.thock.back.market.domain.OrderState;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.repository.query.Param;
@@ -12,7 +13,10 @@ import java.util.Optional;
 
 public interface OrderRepository extends JpaRepository<Order, Long> {
     Optional<Order> findByOrderNumber(String orderName);
+
     List<Order> findByBuyerIdOrderByCreatedAtDesc(Long buyerId);
+
+    List<Order> findByBuyerIdOrderByCreatedAtDesc(Long buyerId, Pageable pageable);
 
     @Query("""
             select distinct o
@@ -30,6 +34,11 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
             where o.id = :orderId
             """)
     Optional<Order> findDetailById(@Param("orderId") Long orderId);
+
+
+
+
+
 
     // 타임아웃 스케줄러용: 결제 요청 후 N분 경과한 미결제 주문 조회
     List<Order> findByStateAndRequestPaymentDateBefore(OrderState state, LocalDateTime before);

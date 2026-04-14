@@ -4,10 +4,13 @@ import com.thock.back.global.exception.CustomException;
 import com.thock.back.global.exception.ErrorCode;
 import java.util.List;
 import com.thock.back.market.domain.Order;
+import com.thock.back.market.in.dto.res.InternalOrderSummaryResponse;
 import com.thock.back.market.in.dto.res.OrderDetailResponse;
 import com.thock.back.market.out.repository.OrderRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -45,5 +48,17 @@ public class OrderService {
         }
 
         return OrderDetailResponse.from(order);
+    }
+
+    @Transactional(readOnly = true)
+    public List<InternalOrderSummaryResponse> getRecentOrderSummaries(Long memberId, int limit) {
+        int safeLimit = Math.min(Math.max(limit, 1), 10);
+        Pageable pageable = PageRequest.of(0, safeLimit);
+
+        List<Order> orders = orderRepository.findByBuyerIdOrderByCreatedAtDesc(memberId, pageable);
+
+        return orders.stream()
+                .map(InternalOrderSummaryResponse::from)
+                .toList();
     }
 }
