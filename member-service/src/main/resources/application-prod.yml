@@ -31,6 +31,8 @@ custom:
   global:
     # Production 외부 게이트웨이 URL
     internalBackUrl: ${INTERNAL_BACK_URL:http://13.209.190.62}
+    marketServiceUrl: ${MARKET_SERVICE_URL:http://market-service:8083}
+    paymentServiceUrl: ${PAYMENT_SERVICE_URL:http://payment-service:8084}
 
 # Logging (운영 환경)
 logging:
