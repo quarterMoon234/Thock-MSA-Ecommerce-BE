@@ -9,6 +9,7 @@ import com.thock.back.market.in.dto.req.OrderCancelRequest;
 import com.thock.back.market.in.dto.req.OrderCreateRequest;
 import com.thock.back.market.in.dto.req.OrderItemsCancelRequest;
 import com.thock.back.market.in.dto.req.OrderItemsConfirmRequest;
+import com.thock.back.market.in.dto.res.InternalOrderSummaryResponse;
 import com.thock.back.market.in.dto.res.OrderCreateResponse;
 import com.thock.back.market.in.dto.res.OrderDetailResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -50,6 +51,23 @@ public class ApiV1OrderController {
         log.info("Market Order API : getMyOrders / memberId = {}", memberId);
         List<OrderDetailResponse> orders = marketFacade.getMyOrders(memberId);
         return ResponseEntity.ok(orders);
+    }
+
+    @Operation(
+            summary = "회원 최근 주문 요약 조회 (내부 API)",
+            description = "관리자 통합 조회용으로 회원의 최근 주문 요약 목록을 반환합니다."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "조회 성공"),
+            @ApiResponse(responseCode = "401", description = "내부 인증 헤더 누락 또는 불일치")
+    })
+    @GetMapping("/internal/members/{memberId}/summaries")
+    public ResponseEntity<List<InternalOrderSummaryResponse>> getInternalRecentOrderSummaries(
+            @PathVariable Long memberId,
+            @RequestParam(defaultValue = "5") int limit
+    ) {
+        log.info("Market Order API : getInternalRecentOrderSummaries / memberId = {}, limit = {}", memberId, limit);
+        return ResponseEntity.ok(marketFacade.getRecentOrderSummaries(memberId, limit));
     }
 
     @Operation(
