@@ -266,6 +266,31 @@ Key comparison fields:
 - `validations.beforeLostEventsDetected`
 - `validations.afterNoEventLoss`
 
+Run the inbox duplicate-consumption comparison with one wrapper.
+
+```bash
+bash loadtest/run-product-inbox-before-after-experiment.sh
+```
+
+This wrapper runs two phases against the same duplicate `RESERVE` event workload:
+
+- `before`: `product.inbox.enabled=false`
+- `after`: `product.inbox.enabled=true`
+
+The wrapper creates one experiment product per phase, publishes the same stock-change event repeatedly to a dedicated experiment topic, then compares reserved stock changes and inbox record counts.
+
+Key comparison fields:
+
+- `before.summary.processedCount`
+- `before.summary.duplicateSkippedCount`
+- `before.summary.reservedDelta`
+- `before.summary.appliedReservationCount`
+- `after.summary.processedCount`
+- `after.summary.duplicateSkippedCount`
+- `after.summary.reservedDelta`
+- `after.summary.appliedReservationCount`
+- `after.summary.inboxRecordCount`
+
 Reset the product experiment state cleanly before each run.
 
 ```bash
