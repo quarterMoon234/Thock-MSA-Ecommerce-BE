@@ -107,6 +107,53 @@ Useful overrides:
 - `STOCK_EXPERIMENT_EXECUTOR=per-vu`
 - `STOCK_EXPERIMENT_EXECUTOR=shared K6_VUS=200`
 
+Run the cart CQRS before/after experiment with one k6 script.
+
+```bash
+bash loadtest/run-cart-cqrs-experiment.sh
+```
+
+This wrapper enables the `experiment` profile for `product-service` and `market-service`, then runs one k6 script that executes these scenarios sequentially:
+
+- `sync_read`
+- `cqrs_read`
+- `sync_read_delay`
+- `cqrs_read_delay`
+- `sync_add`
+- `cqrs_add`
+- `sync_add_delay`
+- `cqrs_add_delay`
+
+The k6 `setup()` does all dataset preparation:
+
+- creates fresh experiment products in `product-service`
+- seeds read/add member pools in `market-service`
+- syncs the cart CQRS projection for the requested product IDs
+
+Useful overrides:
+
+- `K6_SCENARIO_VUS=30`
+- `K6_SCENARIO_DURATION=20s`
+- `K6_SCENARIO_SLOT_SECONDS=25`
+- `K6_PRODUCT_COUNT=3`
+- `K6_PRODUCT_DELAY_MS=900`
+- `K6_READ_MEMBER_COUNT=50`
+- `K6_ADD_MEMBER_COUNT_PER_SCENARIO=100`
+- `K6_PRODUCT_STOCK=100000`
+
+Key output fields:
+
+- `sync_read.avg`, `cqrs_read.avg`
+- `sync_read_delay.avg`, `cqrs_read_delay.avg`
+- `sync_add.avg`, `cqrs_add.avg`
+- `sync_add_delay.avg`, `cqrs_add_delay.avg`
+- `*_throughput`
+- `*_success_rate`
+- `read_avg_improvement_pct`
+- `read_delay_avg_improvement_pct`
+- `add_avg_improvement_pct`
+- `add_delay_avg_improvement_pct`
+
 Reset the product experiment state cleanly before each run.
 
 ```bash
