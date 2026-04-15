@@ -12,6 +12,12 @@ product:
     replicas: ${PRODUCT_PARTITION_EXPERIMENT_TOPIC_REPLICAS:1}
   event:
     publish-mode: ${PRODUCT_EVENT_PUBLISH_MODE:outbox}
+    direct:
+      async-after-commit-enabled: ${PRODUCT_EVENT_DIRECT_ASYNC_AFTER_COMMIT_ENABLED:false}
+      async:
+        core-pool-size: ${PRODUCT_EVENT_DIRECT_ASYNC_CORE_POOL_SIZE:8}
+        max-pool-size: ${PRODUCT_EVENT_DIRECT_ASYNC_MAX_POOL_SIZE:16}
+        queue-capacity: ${PRODUCT_EVENT_DIRECT_ASYNC_QUEUE_CAPACITY:2000}
   inbox:
     enabled: ${PRODUCT_INBOX_ENABLED:true}
     cleanup:
