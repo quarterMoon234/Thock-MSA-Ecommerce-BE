@@ -5,8 +5,10 @@ import com.thock.back.shared.product.event.ProductEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.core.task.TaskExecutor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,6 +22,10 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 public class ProductDirectKafkaEventPublisher implements ProductEventPublisher {
 
     private final @Qualifier("productKafkaTemplate") KafkaTemplate<String, Object> productKafkaTemplate;
+    private final @Qualifier("productDirectPublishExecutor") TaskExecutor productDirectPublishExecutor;
+
+    @Value("${product.event.direct.async-after-commit-enabled:false}")
+    private boolean asyncAfterCommitEnabled;
 
     @Override
     @Transactional(propagation = Propagation.MANDATORY)
@@ -28,13 +34,32 @@ public class ProductDirectKafkaEventPublisher implements ProductEventPublisher {
             TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
                 @Override
                 public void afterCommit() {
-                    send(event);
+                    dispatchAfterCommit(event);
                 }
             });
             return;
         }
 
-        send(event);
+        dispatchAfterCommit(event);
+    }
+
+    private void dispatchAfterCommit(ProductEvent event) {
+        if (asyncAfterCommitEnabled) {
+            productDirectPublishExecutor.execute(() -> sendSafely(event));
+            return;
+        }
+
+        sendSafely(event);
+    }
+
+    private void sendSafely(ProductEvent event) {
+        try {
+            send(event);
+        } catch (Exception e) {
+            String eventKey = String.valueOf(event.productId());
+            log.error("Failed to publish product event directly before send completion. key={}, error={}",
+                    eventKey, e.getMessage(), e);
+        }
     }
 
     private void send(ProductEvent event) {

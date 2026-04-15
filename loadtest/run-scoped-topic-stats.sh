@@ -31,7 +31,9 @@ cleanup() {
 
 trap cleanup EXIT
 
-docker compose exec -T mysql mysql -uroot "-p${MYSQL_ROOT_PASSWORD}" -Nse \
+docker compose exec -T \
+  -e MYSQL_PWD="${MYSQL_ROOT_PASSWORD}" \
+  mysql mysql -uroot -Nse \
   "SELECT id
    FROM thock_product_db.products
    WHERE name LIKE 'k6-${RUN_ID}-%'
