@@ -10,6 +10,10 @@ product:
       name: ${PRODUCT_PARTITION_EXPERIMENT_MULTI_TOPIC:market.order.stock.changed.experiment.multi}
       partitions: ${PRODUCT_PARTITION_EXPERIMENT_MULTI_TOPIC_PARTITIONS:3}
     replicas: ${PRODUCT_PARTITION_EXPERIMENT_TOPIC_REPLICAS:1}
+  inbox-experiment:
+    topic: ${PRODUCT_INBOX_EXPERIMENT_TOPIC:market.order.stock.changed.experiment.inbox}
+    consumer-group: ${PRODUCT_INBOX_EXPERIMENT_CONSUMER_GROUP:product-inbox-experiment}
+    replicas: ${PRODUCT_INBOX_EXPERIMENT_TOPIC_REPLICAS:1}
   event:
     publish-mode: ${PRODUCT_EVENT_PUBLISH_MODE:outbox}
     direct:
