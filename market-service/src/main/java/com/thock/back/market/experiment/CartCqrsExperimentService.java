@@ -83,6 +83,24 @@ public class CartCqrsExperimentService {
         return dataset;
     }
 
+    @Transactional
+    public void syncCartProductViews(List<Long> productIds) {
+        if (productIds == null || productIds.isEmpty()) {
+            throw new CustomException(ErrorCode.CART_PRODUCT_INFO_NOT_FOUND);
+        }
+
+        List<Long> distinctProductIds = productIds.stream()
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+
+        if (distinctProductIds.isEmpty()) {
+            throw new CustomException(ErrorCode.CART_PRODUCT_INFO_NOT_FOUND);
+        }
+
+        upsertCartProductViews(distinctProductIds);
+    }
+
     @Transactional(readOnly = true)
     public CartItemListResponse getBaselineCartItems(Long memberId, long productDelayMs) {
         MarketMember member = marketSupport.findMemberById(memberId)
