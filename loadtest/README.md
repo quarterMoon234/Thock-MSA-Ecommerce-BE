@@ -201,6 +201,71 @@ Key result fields:
 - `improvements.throughputEventsPerSecondPct`
 - `improvements.totalDurationMsPct`
 
+Run the Outbox recovery experiment with one wrapper.
+
+```bash
+bash loadtest/run-product-outbox-recovery-experiment.sh
+```
+
+This wrapper runs a fixed-iteration product create load while `redpanda` is stopped, then restarts `product-service` after broker recovery and measures how fast run-scoped outbox rows converge from `PENDING` to `SENT`.
+
+Flow:
+
+- start stack in `outbox` publish mode
+- capture `product.changed` start offset
+- stop `redpanda`
+- run fixed-iteration product create load
+- verify run-scoped outbox rows accumulated as `PENDING`
+- start `redpanda` again
+- restart `product-service`
+- poll until run-scoped outbox rows are fully `SENT` and topic messages match created product rows
+
+Useful overrides:
+
+- `RUN_ID=1778000000`
+- `K6_ITERATIONS=2400`
+- `K6_VUS=50`
+- `K6_STOCK=5`
+- `PRODUCT_OUTBOX_POLLER_INTERVAL_MS=1000`
+- `RECOVERY_POLL_INTERVAL_SECONDS=1`
+- `RECOVERY_POLL_TIMEOUT_SECONDS=300`
+
+Key result fields:
+
+- `beforeRecovery.dbProductsCreated`
+- `beforeRecovery.pendingCount`
+- `afterRecovery.sentCount`
+- `afterRecovery.matchedUniqueProducts`
+- `afterRecovery.missingPublishedEvent`
+- `recovery.durationMillis`
+- `validations.pendingAccumulatedBeforeRecovery`
+- `validations.allOutboxSentAfterRecovery`
+- `validations.noEventLoss`
+
+Run the direct-vs-outbox reliability comparison with one wrapper.
+
+```bash
+bash loadtest/run-product-outbox-before-after-experiment.sh
+```
+
+This wrapper runs two phases under the same fixed-iteration create load:
+
+- `before`: `direct` publish mode + broker down during create + `product-service` restart before broker recovery
+- `after`: `outbox` publish mode + broker down during create + broker recovery + `product-service` restart
+
+Key comparison fields:
+
+- `before.dbProductsCreated`
+- `before.matchedUniqueProducts`
+- `before.missingPublishedEvent`
+- `after.beforeRecovery.pendingCount`
+- `after.afterRecovery.sentCount`
+- `after.afterRecovery.matchedUniqueProducts`
+- `after.afterRecovery.missingPublishedEvent`
+- `after.recovery.durationMillis`
+- `validations.beforeLostEventsDetected`
+- `validations.afterNoEventLoss`
+
 Reset the product experiment state cleanly before each run.
 
 ```bash

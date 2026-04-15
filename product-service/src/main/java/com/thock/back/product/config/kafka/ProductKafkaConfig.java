@@ -25,6 +25,15 @@ public class ProductKafkaConfig {
     @Value("${spring.kafka.bootstrap-servers:localhost:9092}")
     private String bootstrapServers;
 
+    @Value("${product.kafka.request-timeout-ms:30000}")
+    private int requestTimeoutMs;
+
+    @Value("${product.kafka.delivery-timeout-ms:120000}")
+    private int deliveryTimeoutMs;
+
+    @Value("${product.kafka.max-block-ms:60000}")
+    private int maxBlockMs;
+
     private ObjectMapper kafkaObjectMapper() {
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.registerModule(new JavaTimeModule());
@@ -40,8 +49,9 @@ public class ProductKafkaConfig {
         configProps.put(ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG, true);
         configProps.put(ProducerConfig.ACKS_CONFIG, "all");
         configProps.put(ProducerConfig.RETRIES_CONFIG, Integer.MAX_VALUE);
-        configProps.put(ProducerConfig.DELIVERY_TIMEOUT_MS_CONFIG, 120_000);
-        configProps.put(ProducerConfig.REQUEST_TIMEOUT_MS_CONFIG, 30_000);
+        configProps.put(ProducerConfig.DELIVERY_TIMEOUT_MS_CONFIG, deliveryTimeoutMs);
+        configProps.put(ProducerConfig.REQUEST_TIMEOUT_MS_CONFIG, requestTimeoutMs);
+        configProps.put(ProducerConfig.MAX_BLOCK_MS_CONFIG, maxBlockMs);
 
         JsonSerializer<Object> jsonSerializer = new JsonSerializer<>(kafkaObjectMapper());
         jsonSerializer.setAddTypeInfo(true);
