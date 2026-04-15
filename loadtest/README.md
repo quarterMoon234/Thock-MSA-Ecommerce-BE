@@ -154,6 +154,53 @@ Key output fields:
 - `add_avg_improvement_pct`
 - `add_delay_avg_improvement_pct`
 
+Run the Kafka partition before/after experiment with one wrapper.
+
+```bash
+bash loadtest/run-partition-experiment.sh
+```
+
+This wrapper compares two phases under the same event volume:
+
+- `single`: single-partition topic + listener concurrency `1`
+- `multi`: multi-partition topic + listener concurrency `3`
+
+Each phase:
+
+- creates fresh experiment products in `product-service`
+- resets the in-memory processing recorder
+- publishes `RESERVE -> COMMIT` stock events with `orderNumber` as the Kafka key
+- polls until all expected events are processed
+
+Measurement notes:
+
+- `totalDurationMillis` starts immediately before Kafka event publish and ends when the last event is processed
+- product creation/setup time is excluded from the before/after comparison
+- `orderingViolationCount=0` means `RESERVE -> COMMIT` order was preserved for every `orderNumber`
+
+Useful overrides:
+
+- `RUN_ID=1777000000`
+- `EXPERIMENT_TOTAL_EVENTS=3000`
+- `EXPERIMENT_PRODUCT_COUNT=12`
+- `EXPERIMENT_QUANTITY=1`
+- `EXPERIMENT_STOCK=100000`
+- `PARTITION_EXPERIMENT_SINGLE_CONCURRENCY=1`
+- `PARTITION_EXPERIMENT_MULTI_CONCURRENCY=3`
+- `PARTITION_EXPERIMENT_SINGLE_TOPIC=market.order.stock.changed.experiment.single`
+- `PARTITION_EXPERIMENT_MULTI_TOPIC=market.order.stock.changed.experiment.multi`
+
+Key result fields:
+
+- `single.summary.throughputEventsPerSecond`
+- `multi.summary.throughputEventsPerSecond`
+- `single.summary.totalDurationMillis`
+- `multi.summary.totalDurationMillis`
+- `single.summary.orderingViolationCount`
+- `multi.summary.orderingViolationCount`
+- `improvements.throughputEventsPerSecondPct`
+- `improvements.totalDurationMsPct`
+
 Reset the product experiment state cleanly before each run.
 
 ```bash

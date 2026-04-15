@@ -2,6 +2,14 @@ product:
   metrics:
     enabled: ${PRODUCT_METRICS_ENABLED:true}
     collect-interval-ms: ${PRODUCT_METRICS_COLLECT_INTERVAL_MS:5000}
+  partition-experiment:
+    topic: ${PRODUCT_PARTITION_EXPERIMENT_TOPIC:market.order.stock.changed.experiment.single}
+    single-topic:
+      name: ${PRODUCT_PARTITION_EXPERIMENT_SINGLE_TOPIC:market.order.stock.changed.experiment.single}
+    multi-topic:
+      name: ${PRODUCT_PARTITION_EXPERIMENT_MULTI_TOPIC:market.order.stock.changed.experiment.multi}
+      partitions: ${PRODUCT_PARTITION_EXPERIMENT_MULTI_TOPIC_PARTITIONS:3}
+    replicas: ${PRODUCT_PARTITION_EXPERIMENT_TOPIC_REPLICAS:1}
   event:
     publish-mode: ${PRODUCT_EVENT_PUBLISH_MODE:outbox}
   inbox:
