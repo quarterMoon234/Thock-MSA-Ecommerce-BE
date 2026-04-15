@@ -11,6 +11,10 @@ import java.util.List;
 
 public interface ProductInboxEventRepository extends JpaRepository<ProductInboxEvent, Long> {
 
+    long countByTopicAndConsumerGroupAndIdempotencyKey(String topic, String consumerGroup, String idempotencyKey);
+
+    long countByTopicAndIdempotencyKey(String topic, String idempotencyKey);
+
     // idempotencyKey + topic + consumerGroup -> DB 유니크 제약으로 검증
     @Modifying
     @Query(
