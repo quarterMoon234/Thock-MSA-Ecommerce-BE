@@ -30,6 +30,14 @@ public class CartCqrsExperimentController {
         return ResponseEntity.ok(cartCqrsExperimentService.seedDataset(request));
     }
 
+    @PostMapping("/product-views/sync")
+    public ResponseEntity<Void> syncProductViews(
+            @Valid @RequestBody CartCqrsExperimentProductViewSyncRequest request
+    ) {
+        cartCqrsExperimentService.syncCartProductViews(request.productIds());
+        return ResponseEntity.noContent().build();
+    }
+
     @GetMapping("/baseline/read/{memberId}")
     public ResponseEntity<CartItemListResponse> getBaselineCartItems(
             @PathVariable Long memberId,

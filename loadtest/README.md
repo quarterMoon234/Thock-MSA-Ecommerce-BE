@@ -258,6 +258,51 @@ Key comparison fields:
 - `before.dbProductsCreated`
 - `before.matchedUniqueProducts`
 - `before.missingPublishedEvent`
+
+Run the market-service circuit breaker before/after comparison with one wrapper.
+
+```bash
+bash loadtest/run-market-circuit-breaker-before-after-experiment.sh
+```
+
+This wrapper runs two phases under the same payment-service outage condition:
+
+- `before`: circuit breaker disabled, payment-service down during order create
+- `after`: circuit breaker enabled with aggressive open settings, payment-service down during order create, then recovery
+
+Flow:
+
+- start required services and recreate `market-service` per phase
+- create fresh experiment products
+- sign up/login a fresh buyer and fill cart
+- stop `payment-service`
+- issue repeated order-create requests and collect status/time
+- in the `after` phase, restore `payment-service` and verify `OPEN -> HALF_OPEN -> CLOSED` recovery
+- write one combined JSON summary under `loadtest/results/`
+
+Useful overrides:
+
+- `RUN_ID=1779000000`
+- `PRODUCT_IDS=1,2,3`
+- `FAIL_REQUESTS=3`
+- `MARKET_FEIGN_DEFAULT_CONNECT_TIMEOUT=100`
+- `MARKET_FEIGN_DEFAULT_READ_TIMEOUT=150`
+- `MARKET_CB_PAYMENT_SLIDING_WINDOW_SIZE=1`
+- `MARKET_CB_PAYMENT_MINIMUM_NUMBER_OF_CALLS=1`
+- `MARKET_CB_PAYMENT_FAILURE_RATE_THRESHOLD=1`
+- `MARKET_CB_PAYMENT_WAIT_DURATION_IN_OPEN_STATE=3s`
+- `MARKET_CB_PAYMENT_PERMITTED_CALLS_IN_HALF_OPEN=1`
+
+Key result fields:
+
+- `before.followupFailureAvgTimeMs`
+- `after.followupFailureAvgTimeMs`
+- `after.callNotPermittedObserved`
+- `after.openTransitionObserved`
+- `after.halfOpenTransitionObserved`
+- `after.closedTransitionObserved`
+- `after.recoveryRequests`
+- `improvements.followupFailureTimeReductionPct`
 - `after.beforeRecovery.pendingCount`
 - `after.afterRecovery.sentCount`
 - `after.afterRecovery.matchedUniqueProducts`
