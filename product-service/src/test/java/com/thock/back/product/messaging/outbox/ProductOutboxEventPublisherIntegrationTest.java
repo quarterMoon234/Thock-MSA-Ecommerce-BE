@@ -19,7 +19,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import java.util.List;
 import java.util.Map;
@@ -29,6 +28,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringBootTest(
         classes = ProductServiceApplication.class,
         properties = {
+                "product.event.publish-mode=outbox",
                 "product.outbox.enabled=true",
                 "product.inbox.enabled=false",
                 "spring.kafka.listener.auto-startup=false"
@@ -51,10 +51,6 @@ class ProductOutboxEventPublisherIntegrationTest {
 
     @Autowired
     private ObjectMapper objectMapper;
-
-    // Scheduled poller가 테스트 도중 row 상태를 바꾸지 않도록 mock으로 교체한다.
-    @MockitoBean
-    private ProductOutboxPoller productOutboxPoller;
 
     @AfterEach
     void tearDown() {

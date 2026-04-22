@@ -55,8 +55,21 @@ logs/
 .DS_store
 .claude
 
+### Load Test Results ###
+loadtest/results/*
+!loadtest/results/.gitkeep
+
+### Documentation Assets ###
+docs/
+
 ### AWS EC2 Environment/Sensitive Files ###
 AWS EC2/deploy-kubernetes/base/secrets.yaml
 AWS EC2/deploy-kubernetes/ingress/ip-whitelist-middleware.yaml
 AWS EC2/deploy-docker-compose/nginx/ssl/*.key
 AWS EC2/deploy-docker-compose/nginx/ssl/*.crt
+/deploy-docker-compose/.env
+/deploy-docker-compose/release-state.env
+/deploy-docker-compose/logs/
+/deploy-docker-compose/compose.sh
+/deploy-docker-compose/nginx/ssl/
+/deploy-docker-compose/nginx/certbot/

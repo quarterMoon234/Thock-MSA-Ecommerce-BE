@@ -29,6 +29,8 @@ custom:
   global:
     # Docker 내부에서는 서비스 이름으로 통신
     internalBackUrl: http://api-gateway:8080
+    marketServiceUrl: ${MARKET_SERVICE_URL:http://market-service:8083}
+    paymentServiceUrl: ${PAYMENT_SERVICE_URL:http://payment-service:8084}
 
 swagger:
   server:

@@ -4,10 +4,13 @@ import com.thock.back.global.exception.CustomException;
 import com.thock.back.global.exception.ErrorCode;
 import java.util.List;
 import com.thock.back.market.domain.Order;
+import com.thock.back.market.in.dto.res.InternalOrderSummaryResponse;
 import com.thock.back.market.in.dto.res.OrderDetailResponse;
 import com.thock.back.market.out.repository.OrderRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,7 +27,7 @@ public class OrderService {
      */
     @Transactional(readOnly = true)
     public List<OrderDetailResponse> getMyOrders(Long memberId) {
-        List<Order> orders = orderRepository.findByBuyerIdOrderByCreatedAtDesc(memberId);
+        List<Order> orders = orderRepository.findDetailsByBuyerIdOrderByCreatedAtDesc(memberId);
 
         return orders.stream()
                 .map(OrderDetailResponse::from)
@@ -36,7 +39,7 @@ public class OrderService {
      */
     @Transactional(readOnly = true)
     public OrderDetailResponse getOrderDetail(Long memberId, Long orderId) {
-        Order order = orderRepository.findById(orderId)
+        Order order = orderRepository.findDetailById(orderId)
                 .orElseThrow(() -> new CustomException(ErrorCode.ORDER_NOT_FOUND));
 
         // 본인 주문인지 확인
@@ -45,5 +48,17 @@ public class OrderService {
         }
 
         return OrderDetailResponse.from(order);
+    }
+
+    @Transactional(readOnly = true)
+    public List<InternalOrderSummaryResponse> getRecentOrderSummaries(Long memberId, int limit) {
+        int safeLimit = Math.min(Math.max(limit, 1), 10);
+        Pageable pageable = PageRequest.of(0, safeLimit);
+
+        List<Order> orders = orderRepository.findByBuyerIdOrderByCreatedAtDesc(memberId, pageable);
+
+        return orders.stream()
+                .map(InternalOrderSummaryResponse::from)
+                .toList();
     }
 }

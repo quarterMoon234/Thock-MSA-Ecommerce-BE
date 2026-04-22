@@ -21,6 +21,8 @@ spring:
 product:
   inbox:
     enabled: true
+  cache:
+    enabled: true
 
 swagger:
   server:

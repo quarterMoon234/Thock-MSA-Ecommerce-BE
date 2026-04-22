@@ -11,6 +11,7 @@ public record ProductInternalResponse (
         Long price,
         Long salePrice,
         Integer stock,
+        Integer reservedStock,
         String state
 ) {
     public ProductInternalResponse(Product product) {
@@ -22,6 +23,7 @@ public record ProductInternalResponse (
                 product.getPrice(),
                 product.getSalePrice(),
                 product.getStock(),
+                product.getReservedStock(),
                 product.getState().name()
         );
     }

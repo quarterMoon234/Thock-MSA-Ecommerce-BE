@@ -1,7 +1,9 @@
 package com.thock.back.product.messaging.inbox;
 
+import com.thock.back.product.monitoring.ProductInboxProcessMetrics;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -13,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class ProductInboxGuard {
 
     private final ProductInboxEventRepository productInboxEventRepository;
+    private ProductInboxProcessMetrics productInboxProcessMetrics;
 
     @Transactional
     public boolean tryClaim(String idempotencyKey, String topic, String consumerGroup) {
@@ -20,11 +23,30 @@ public class ProductInboxGuard {
 
         // 이벤트 처음 처리
         if (inserted == 1) {
+            recordClaimSucceeded();
             return true;
         }
 
         // 이미 처리된 이벤트 (중복)
+        recordDuplicateIgnored();
         log.info("Duplicate inbox message ignored: topic={}, consumerGroup={}, key={}", topic, consumerGroup, idempotencyKey);
         return false;
+    }
+
+    @Autowired(required = false)
+    void setProductInboxProcessMetrics(ProductInboxProcessMetrics productInboxProcessMetrics) {
+        this.productInboxProcessMetrics = productInboxProcessMetrics;
+    }
+
+    private void recordClaimSucceeded() {
+        if (productInboxProcessMetrics != null) {
+            productInboxProcessMetrics.recordClaimSucceeded();
+        }
+    }
+
+    private void recordDuplicateIgnored() {
+        if (productInboxProcessMetrics != null) {
+            productInboxProcessMetrics.recordDuplicateIgnored();
+        }
     }
 }

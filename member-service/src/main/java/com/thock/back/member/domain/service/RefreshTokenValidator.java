@@ -3,12 +3,10 @@ package com.thock.back.member.domain.service;
 import com.thock.back.global.exception.CustomException;
 import com.thock.back.global.exception.ErrorCode;
 import com.thock.back.member.domain.entity.Member;
-import com.thock.back.member.domain.entity.RefreshToken;
 import com.thock.back.member.domain.vo.ValidatedRefreshToken;
 import com.thock.back.member.out.MemberRepository;
-import com.thock.back.member.out.RefreshTokenRepository;
+import com.thock.back.member.out.RefreshSessionStore;
 import com.thock.back.member.security.JwtTokenProvider;
-import com.thock.back.member.security.RefreshTokenHasher;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -31,67 +29,33 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class RefreshTokenValidator {
 
-    private final RefreshTokenRepository refreshTokenRepository;
-    private final RefreshTokenHasher refreshTokenHasher;
     private final JwtTokenProvider jwtTokenProvider;
     private final MemberRepository memberRepository;
+    private final RefreshSessionStore refreshSessionStore;
 
     /**
      * RefreshToken을 종합적으로 검증
+     *
      * @param refreshTokenValue = 평문 RefreshToken
      * @return 검증된 토큰과 회원 정보
      * @throws CustomException 검증 실패 시
      **/
     public ValidatedRefreshToken validate(String refreshTokenValue) {
-        String tokenHash = refreshTokenHasher.hash(refreshTokenValue);
-
-        RefreshToken token = findToken(tokenHash);
-        validateTokenState(token);
         validateJwtSignature(refreshTokenValue);
-        validateMemberIdMatch(token, refreshTokenValue);
-        Member member = findAndValidateMember(token.getMemberId());
+        validateRefreshTokenType(refreshTokenValue);
 
-        log.info("[AUTH] RefreshToken validated successfully. memberId={}", member.getId());
+        String jti = extractJti(refreshTokenValue);
+        Long memberId = validateSession(refreshTokenValue, jti);
+        Member member = findAndValidateMember(memberId);
 
-        return new ValidatedRefreshToken(token, member);
-    }
+        log.info("[AUTH] RefreshToken validated successfully. memberId={}, jti={}", member.getId(), jti);
 
-    private RefreshToken findToken(String tokenHash) {
-        return refreshTokenRepository.findByTokenHash(tokenHash)
-                .orElseThrow(() -> {
-                    log.warn("[SECURITY] RefreshToken not found in DB. hash={}...",
-                            tokenHash.substring(0, 10));
-                    return new CustomException(ErrorCode.REFRESH_TOKEN_NOT_FOUND);
-                });
-    }
-
-    private void validateTokenState(RefreshToken token) {
-        if (token.isRevoked()) {
-            log.warn("[SECURITY] Revoked RefreshToken access attempt. memberId={}, revokedAt={}",
-                    token.getMemberId(), token.getRevokedAt());
-            throw new CustomException(ErrorCode.REFRESH_TOKEN_REVOKED);
-        }
-
-        if (token.isExpired()) {
-            log.warn("[SECURITY] Expired RefreshToken access attempt. memberId={}, expiredAt={}",
-                    token.getMemberId(), token.getExpiresAt());
-            throw new CustomException(ErrorCode.REFRESH_TOKEN_EXPIRED);
-        }
+        return new ValidatedRefreshToken(refreshTokenValue, jti, member);
     }
 
     private void validateJwtSignature(String refreshTokenValue) {
         if (!jwtTokenProvider.validate(refreshTokenValue)) {
             log.warn("[SECURITY] Invalid RefreshToken JWT signature");
-            throw new CustomException(ErrorCode.REFRESH_TOKEN_INVALID);
-        }
-    }
-
-    private void validateMemberIdMatch(RefreshToken token, String refreshTokenValue) {
-        Long jwtMemberId = jwtTokenProvider.extractMemberId(refreshTokenValue);
-
-        if (!token.getMemberId().equals(jwtMemberId)) {
-            log.warn("[SECURITY] RefreshToken memberId mismatch. DB={}, JWT={}",
-                    token.getMemberId(), jwtMemberId);
             throw new CustomException(ErrorCode.REFRESH_TOKEN_INVALID);
         }
     }
@@ -111,5 +75,40 @@ public class RefreshTokenValidator {
         }
 
         return member;
+    }
+
+    private void validateRefreshTokenType(String refreshTokenValue) {
+        String tokenType = jwtTokenProvider.extractTokenType(refreshTokenValue);
+        if (!"refresh".equals(tokenType)) {
+            log.warn("[SECURITY] Invalid token type for refresh token. type={}", tokenType);
+            throw new CustomException(ErrorCode.REFRESH_TOKEN_INVALID);
+        }
+    }
+
+    private Long validateSession(String refreshTokenValue, String jti) {
+        return refreshSessionStore.findActiveMemberId(jti)
+                .orElseGet(() -> handleInactiveSession(refreshTokenValue, jti));
+    }
+
+    private String extractJti(String refreshTokenValue) {
+        String jti = jwtTokenProvider.extractJti(refreshTokenValue);
+        if (jti == null || jti.isBlank()) {
+            log.warn("[SECURITY] Missing jti in refresh token");
+            throw new CustomException(ErrorCode.REFRESH_TOKEN_INVALID);
+        }
+        return jti;
+    }
+
+    private Long handleInactiveSession(String refreshTokenValue, String jti) {
+        Long memberId = jwtTokenProvider.extractMemberId(refreshTokenValue);
+
+        if (refreshSessionStore.isRotated(jti)) {
+            log.warn("[SECURITY] Reused rotated refresh token detected. memberId={}, jti={}", memberId, jti);
+            refreshSessionStore.revokeAll(memberId);
+            throw new CustomException(ErrorCode.REFRESH_TOKEN_REVOKED);
+        }
+
+        log.warn("[SECURITY] Refresh token not found in active session store. memberId={}, jti={}", memberId, jti);
+        throw new CustomException(ErrorCode.REFRESH_TOKEN_NOT_FOUND);
     }
 }

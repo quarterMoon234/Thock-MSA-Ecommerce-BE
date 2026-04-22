@@ -2,17 +2,22 @@ package com.thock.back.product.app;
 
 import com.thock.back.global.exception.CustomException;
 import com.thock.back.global.exception.ErrorCode;
+import com.thock.back.product.cache.ProductCacheSnapshot;
+import com.thock.back.product.cache.ProductCacheSyncService;
 import com.thock.back.product.domain.command.ProductUpdateCommand;
 import com.thock.back.product.domain.entity.Product;
 import com.thock.back.product.domain.service.ProductAuthorizationValidator;
 import com.thock.back.product.messaging.publisher.ProductEventPublisher;
 import com.thock.back.product.out.ProductRepository;
+import com.thock.back.product.stock.ProductStockRedisSyncService;
 import com.thock.back.shared.member.domain.MemberRole;
 import com.thock.back.shared.product.event.ProductEvent;
 import com.thock.back.shared.product.event.ProductEventType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
@@ -21,7 +26,9 @@ public class ProductManageService {
 
     private final ProductRepository productRepository;
     private final ProductEventPublisher productEventPublisher;
+    private final ProductCacheSyncService productCacheSyncService;
     private final ProductAuthorizationValidator authorizationValidator;
+    private final ProductStockRedisSyncService productStockRedisSyncService;
 
     public Long updateProduct(ProductUpdateCommand command) {
         Product product = productRepository.findById(command.productId())
@@ -29,6 +36,9 @@ public class ProductManageService {
 
         authorizationValidator.validateOwnership(product, command.requesterId(), command.role());
 
+        Integer previousStock = product.getStock();
+
+        // 상품 수정
         product.modify(
                 command.name(),
                 command.price(),
@@ -40,13 +50,24 @@ public class ProductManageService {
                 command.detail()
         );
 
+        // 캐시 수정
+        productCacheSyncService.saveAfterCommit(ProductCacheSnapshot.from(product));
+
+        // Lua
+        if (!Objects.equals(previousStock, product.getStock())) {
+            productStockRedisSyncService.evictAfterCommit(product.getId());
+        }
+
+        // 상품 동기화 이벤트 발행
         productEventPublisher.publish(ProductEvent.builder()
                 .productId(product.getId())
                 .sellerId(product.getSellerId())
                 .name(product.getName())
                 .price(product.getPrice())
                 .salePrice(product.getSalePrice())
+                .description(product.getDescription())
                 .stock(product.getStock())
+                .reservedStock(product.getReservedStock())
                 .imageUrl(product.getImageUrl())
                 .productState(product.getState().name())
                 .eventType(ProductEventType.UPDATE)
@@ -64,11 +85,35 @@ public class ProductManageService {
         Long deletedId = product.getId();
         Long sellerId = product.getSellerId();
 
+        String name = product.getName();
+        Long price = product.getPrice();
+        Long salePrice = product.getSalePrice();
+        String description = product.getDescription();
+        Integer stock = product.getStock();
+        Integer reservedStock = product.getReservedStock();
+        String imageUrl = product.getImageUrl();
+
+        // 상품 삭제
         productRepository.delete(product);
 
+        // 캐시 삭제
+        productCacheSyncService.evictAfterCommit(deletedId);
+
+        // Lua
+        productStockRedisSyncService.evictAfterCommit(deletedId);
+
+        // 상품 동기화 이벤트 발행
         productEventPublisher.publish(ProductEvent.builder()
                 .productId(deletedId)
                 .sellerId(sellerId)
+                .name(name)
+                .price(price)
+                .salePrice(salePrice)
+                .description(description)
+                .stock(stock)
+                .reservedStock(reservedStock)
+                .imageUrl(imageUrl)
+                .productState("DELETED")
                 .eventType(ProductEventType.DELETE)
                 .build());
     }

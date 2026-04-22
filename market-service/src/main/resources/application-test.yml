@@ -13,14 +13,28 @@ spring:
     username: ${TEST_DB_USERNAME:test}
     password: ${TEST_DB_PASSWORD:test}
 
+  flyway:
+    enabled: false
+
   jpa:
     hibernate:
       ddl-auto: create-drop
+    properties:
+      hibernate:
+        generate_statistics: true
+
+  task:
+    scheduling:
+      enabled: false
 
 custom:
   global:
     productServiceUrl: http://localhost:8082
     paymentServiceUrl: http://localhost:8084
+
+market:
+  metrics:
+    enabled: false
 
 jwt:
   secret: thock-test-jwt-secret-key-which-is-long-enough-32chars

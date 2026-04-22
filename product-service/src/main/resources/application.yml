@@ -20,6 +20,13 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.MySQLDialect
 
+  # Redis
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      timeout: 2s
+
 # JWT 설정
 jwt:
   secret: ${JWT_SECRET_KEY}
@@ -51,9 +58,47 @@ springdoc:
 product:
   inbox:
     enabled: true
+    cleanup:
+      enabled: true
+      interval-ms: 3600000
+      retention-days: 7
+      batch-size: 500
+  dlq:
+    retry:
+      interval-ms: 1000
+      max-attempts: 2
   kafka:
     consumer-group: product-service
+    listener:
+      concurrency: 1
+  metrics:
+    enabled: true
+    collect-interval-ms: 10000
+  event:
+    publish-mode: outbox
   outbox:
     enabled: true
+    max-retries: 10
+    retry-delay-ms: 5000
+    max-retry-delay-ms: 300000
+    kafka:
+      request-timeout-ms: 30000
+      delivery-timeout-ms: 120000
+      retry-backoff-ms: 1000
+      max-block-ms: 60000
     poller:
       interval-ms: 3000
+      after-send-delay-ms: 0
+    cleanup:
+      enabled: true
+      interval-ms: 3600000
+      retention-days: 7
+      batch-size: 500
+  cache:
+    enabled: ${PRODUCT_CACHE_ENABLED:false}
+    ttl-seconds: ${PRODUCT_CACHE_TTL_SECONDS:600}
+  stock:
+    redis:
+      enabled: ${PRODUCT_STOCK_REDIS_ENABLED:false}
+      key-prefix: ${PRODUCT_STOCK_REDIS_KEY_PREFIX:product:stock}
+      reservation-ttl-seconds: ${PRODUCT_STOCK_REDIS_RESERVATION_TTL_SECONDS:1800}

@@ -55,11 +55,15 @@ services:
       MYSQL_DATABASE: thock_member_db
       MYSQL_USER: thock_member_db_user
       MYSQL_PASSWORD: ${MEMBER_DB_PASSWORD}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
       KAFKA_BOOTSTRAP_SERVERS: redpanda:29092
       LOG_PATH: /app/logs
     depends_on:
       mysql:
         condition: service_healthy
+      redis:
+        condition: service_started
       redpanda:
         condition: service_started
     networks:
@@ -80,18 +84,54 @@ services:
     environment:
       TZ: Asia/Seoul
       JAVA_TOOL_OPTIONS: "-Duser.timezone=Asia/Seoul -Xms256m -Xmx512m"
-      SPRING_PROFILES_ACTIVE: docker
+      SPRING_PROFILES_ACTIVE: ${PRODUCT_SERVICE_PROFILES_ACTIVE:-docker}
       MYSQL_HOST: mysql
       MYSQL_PORT: 3306
       MYSQL_DATABASE: thock_product_db
       MYSQL_USER: thock_product_db_user
       MYSQL_PASSWORD: ${PRODUCT_DB_PASSWORD}
       KAFKA_BOOTSTRAP_SERVERS: redpanda:29092
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      PRODUCT_CACHE_ENABLED: ${PRODUCT_CACHE_ENABLED:-true}
+      PRODUCT_CACHE_TTL_SECONDS: ${PRODUCT_CACHE_TTL_SECONDS:-600}
+      PRODUCT_STOCK_REDIS_ENABLED: ${PRODUCT_STOCK_REDIS_ENABLED:-false}
+      PRODUCT_STOCK_REDIS_KEY_PREFIX: ${PRODUCT_STOCK_REDIS_KEY_PREFIX:-product:stock}
+      PRODUCT_STOCK_REDIS_RESERVATION_TTL_SECONDS: ${PRODUCT_STOCK_REDIS_RESERVATION_TTL_SECONDS:-1800}
+      PRODUCT_EVENT_PUBLISH_MODE: ${PRODUCT_EVENT_PUBLISH_MODE:-outbox}
+      PRODUCT_KAFKA_CONSUMER_GROUP: ${PRODUCT_KAFKA_CONSUMER_GROUP:-product-service}
+      PRODUCT_KAFKA_LISTENER_CONCURRENCY: ${PRODUCT_KAFKA_LISTENER_CONCURRENCY:-1}
+      PRODUCT_PARTITION_EXPERIMENT_TOPIC: ${PRODUCT_PARTITION_EXPERIMENT_TOPIC:-market.order.stock.changed.experiment.single}
+      PRODUCT_INBOX_ENABLED: ${PRODUCT_INBOX_ENABLED:-true}
+      PRODUCT_INBOX_CLEANUP_ENABLED: ${PRODUCT_INBOX_CLEANUP_ENABLED:-true}
+      PRODUCT_INBOX_CLEANUP_INTERVAL_MS: ${PRODUCT_INBOX_CLEANUP_INTERVAL_MS:-3600000}
+      PRODUCT_INBOX_CLEANUP_RETENTION_DAYS: ${PRODUCT_INBOX_CLEANUP_RETENTION_DAYS:-7}
+      PRODUCT_INBOX_CLEANUP_BATCH_SIZE: ${PRODUCT_INBOX_CLEANUP_BATCH_SIZE:-500}
+      PRODUCT_DLQ_RETRY_INTERVAL_MS: ${PRODUCT_DLQ_RETRY_INTERVAL_MS:-1000}
+      PRODUCT_DLQ_RETRY_MAX_ATTEMPTS: ${PRODUCT_DLQ_RETRY_MAX_ATTEMPTS:-2}
+      PRODUCT_METRICS_ENABLED: ${PRODUCT_METRICS_ENABLED:-true}
+      PRODUCT_METRICS_COLLECT_INTERVAL_MS: ${PRODUCT_METRICS_COLLECT_INTERVAL_MS:-5000}
+      PRODUCT_OUTBOX_ENABLED: ${PRODUCT_OUTBOX_ENABLED:-true}
+      PRODUCT_OUTBOX_MAX_RETRIES: ${PRODUCT_OUTBOX_MAX_RETRIES:-10}
+      PRODUCT_OUTBOX_RETRY_DELAY_MS: ${PRODUCT_OUTBOX_RETRY_DELAY_MS:-5000}
+      PRODUCT_OUTBOX_MAX_RETRY_DELAY_MS: ${PRODUCT_OUTBOX_MAX_RETRY_DELAY_MS:-300000}
+      PRODUCT_OUTBOX_KAFKA_REQUEST_TIMEOUT_MS: ${PRODUCT_OUTBOX_KAFKA_REQUEST_TIMEOUT_MS:-2000}
+      PRODUCT_OUTBOX_KAFKA_DELIVERY_TIMEOUT_MS: ${PRODUCT_OUTBOX_KAFKA_DELIVERY_TIMEOUT_MS:-5000}
+      PRODUCT_OUTBOX_KAFKA_RETRY_BACKOFF_MS: ${PRODUCT_OUTBOX_KAFKA_RETRY_BACKOFF_MS:-1000}
+      PRODUCT_OUTBOX_KAFKA_MAX_BLOCK_MS: ${PRODUCT_OUTBOX_KAFKA_MAX_BLOCK_MS:-5000}
+      PRODUCT_OUTBOX_POLLER_INTERVAL_MS: ${PRODUCT_OUTBOX_POLLER_INTERVAL_MS:-3000}
+      PRODUCT_OUTBOX_POLLER_AFTER_SEND_DELAY_MS: ${PRODUCT_OUTBOX_POLLER_AFTER_SEND_DELAY_MS:-0}
+      PRODUCT_OUTBOX_CLEANUP_ENABLED: ${PRODUCT_OUTBOX_CLEANUP_ENABLED:-true}
+      PRODUCT_OUTBOX_CLEANUP_INTERVAL_MS: ${PRODUCT_OUTBOX_CLEANUP_INTERVAL_MS:-3600000}
+      PRODUCT_OUTBOX_CLEANUP_RETENTION_DAYS: ${PRODUCT_OUTBOX_CLEANUP_RETENTION_DAYS:-7}
+      PRODUCT_OUTBOX_CLEANUP_BATCH_SIZE: ${PRODUCT_OUTBOX_CLEANUP_BATCH_SIZE:-500}
       LOG_PATH: /app/logs
     depends_on:
       mysql:
         condition: service_healthy
       redpanda:
+        condition: service_started
+      redis:
         condition: service_started
     networks:
       - internal
@@ -111,7 +151,7 @@ services:
     environment:
       TZ: Asia/Seoul
       JAVA_TOOL_OPTIONS: "-Duser.timezone=Asia/Seoul -Xms256m -Xmx512m"
-      SPRING_PROFILES_ACTIVE: docker
+      SPRING_PROFILES_ACTIVE: ${MARKET_SERVICE_PROFILES_ACTIVE:-docker}
       MYSQL_HOST: mysql
       MYSQL_PORT: 3306
       MYSQL_DATABASE: thock_market_db
@@ -120,6 +160,20 @@ services:
       PRODUCT_SERVICE_URL: http://product-service:8082
       PAYMENT_SERVICE_URL: http://payment-service:8084
       KAFKA_BOOTSTRAP_SERVERS: redpanda:29092
+      MARKET_KAFKA_TOPICS_STOCK_CHANGED_PARTITIONS: ${MARKET_KAFKA_TOPICS_STOCK_CHANGED_PARTITIONS:-1}
+      MARKET_KAFKA_TOPICS_STOCK_CHANGED_REPLICAS: ${MARKET_KAFKA_TOPICS_STOCK_CHANGED_REPLICAS:-1}
+      MARKET_FEIGN_DEFAULT_CONNECT_TIMEOUT: ${MARKET_FEIGN_DEFAULT_CONNECT_TIMEOUT:-700}
+      MARKET_FEIGN_DEFAULT_READ_TIMEOUT: ${MARKET_FEIGN_DEFAULT_READ_TIMEOUT:-1200}
+      MARKET_CB_PRODUCT_SLIDING_WINDOW_SIZE: ${MARKET_CB_PRODUCT_SLIDING_WINDOW_SIZE:-20}
+      MARKET_CB_PRODUCT_MINIMUM_NUMBER_OF_CALLS: ${MARKET_CB_PRODUCT_MINIMUM_NUMBER_OF_CALLS:-10}
+      MARKET_CB_PRODUCT_FAILURE_RATE_THRESHOLD: ${MARKET_CB_PRODUCT_FAILURE_RATE_THRESHOLD:-50}
+      MARKET_CB_PRODUCT_WAIT_DURATION_IN_OPEN_STATE: ${MARKET_CB_PRODUCT_WAIT_DURATION_IN_OPEN_STATE:-10s}
+      MARKET_CB_PRODUCT_PERMITTED_CALLS_IN_HALF_OPEN: ${MARKET_CB_PRODUCT_PERMITTED_CALLS_IN_HALF_OPEN:-3}
+      MARKET_CB_PAYMENT_SLIDING_WINDOW_SIZE: ${MARKET_CB_PAYMENT_SLIDING_WINDOW_SIZE:-20}
+      MARKET_CB_PAYMENT_MINIMUM_NUMBER_OF_CALLS: ${MARKET_CB_PAYMENT_MINIMUM_NUMBER_OF_CALLS:-10}
+      MARKET_CB_PAYMENT_FAILURE_RATE_THRESHOLD: ${MARKET_CB_PAYMENT_FAILURE_RATE_THRESHOLD:-50}
+      MARKET_CB_PAYMENT_WAIT_DURATION_IN_OPEN_STATE: ${MARKET_CB_PAYMENT_WAIT_DURATION_IN_OPEN_STATE:-10s}
+      MARKET_CB_PAYMENT_PERMITTED_CALLS_IN_HALF_OPEN: ${MARKET_CB_PAYMENT_PERMITTED_CALLS_IN_HALF_OPEN:-3}
       LOG_PATH: /app/logs
     depends_on:
       mysql:
@@ -196,6 +250,23 @@ services:
       - internal
     volumes:
       - ./logs/settlement:/app/logs
+    restart: unless-stopped
+  # ==================== Redis ====================
+  redis:
+    image: redis:7.4-alpine
+    container_name: redis
+    ports:
+      - "6379:6379"
+    command:
+      - redis-server
+      - --appendonly
+      - "yes"
+      - --appendfsync
+      - everysec
+    volumes:
+      - redis-data:/data
+    networks:
+      - internal
     restart: unless-stopped
 
   # ==================== Kafka ====================
@@ -328,6 +399,68 @@ services:
       - internal
     restart: unless-stopped
 
+  k6:
+    image: grafana/k6:0.49.0
+    profiles:
+      - loadtest
+    entrypoint:
+      - k6
+    environment:
+      BASE_URL: ${K6_BASE_URL:-http://api-gateway:8080}
+      PASSWORD: ${K6_PASSWORD:-password123!}
+      RATE: ${K6_RATE:-10}
+      DURATION: ${K6_DURATION:-2m}
+      PRE_ALLOCATED_VUS: ${K6_PRE_ALLOCATED_VUS:-20}
+      MAX_VUS: ${K6_MAX_VUS:-100}
+      CATEGORY: ${K6_CATEGORY:-KEYBOARD}
+      PRICE: ${K6_PRICE:-1000}
+      SALE_PRICE: ${K6_SALE_PRICE:-0}
+      STOCK: ${K6_STOCK:-5}
+      TARGET: ${K6_TARGET:-internal}
+      WARM_CACHE: ${K6_WARM_CACHE:-true}
+      PRODUCT_IDS: ${K6_PRODUCT_IDS:-1,2,3}
+      PRODUCT_BATCH_SIZE: ${K6_PRODUCT_BATCH_SIZE:-3}
+      DETAIL_BASE_URL: ${K6_DETAIL_BASE_URL:-http://product-service:8082}
+      INTERNAL_BASE_URL: ${K6_INTERNAL_BASE_URL:-http://product-service:8082}
+      INTERNAL_AUTH_SECRET: ${SECURITY_SERVICE_INTERNAL_SECRET:-}
+      EXECUTOR: ${K6_EXECUTOR:-iterations}
+      ITERATIONS: ${K6_ITERATIONS:-3000}
+      VUS: ${K6_VUS:-50}
+      BANK_CODE: ${K6_BANK_CODE:-088}
+      ACCOUNT_NUMBER: ${K6_ACCOUNT_NUMBER:-1234567890}
+      ACCOUNT_HOLDER: ${K6_ACCOUNT_HOLDER:-k6-seller}
+      EXPERIMENT_NAME: ${K6_EXPERIMENT_NAME:-product-create-load}
+      SLEEP_BETWEEN: ${K6_SLEEP_BETWEEN:-0}
+      SUMMARY_PATH: ${K6_SUMMARY_PATH:-/results/product-create-summary.json}
+    volumes:
+      - ./loadtest:/scripts:ro
+      - ./loadtest/results:/results
+    networks:
+      - internal
+    depends_on:
+      api-gateway:
+        condition: service_started
+      member-service:
+        condition: service_started
+      product-service:
+        condition: service_started
+      redis:
+        condition: service_started
+    restart: "no"
+
+  kcat:
+    image: edenhill/kcat:1.7.1
+    profiles:
+      - loadtest
+    entrypoint:
+      - kcat
+    networks:
+      - internal
+    depends_on:
+      redpanda:
+        condition: service_started
+    restart: "no"
+
 # ==================== Networks ====================
 networks:
   internal:
@@ -336,6 +469,7 @@ networks:
 # ==================== Volumes ====================
 volumes:
   mysql-data:
+  redis-data:
   redpanda-data:
   prometheus-data:
   loki-data:

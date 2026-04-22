@@ -1,5 +1,7 @@
 package com.thock.back.member.app;
 
+import com.thock.back.global.exception.CustomException;
+import com.thock.back.global.exception.ErrorCode;
 import com.thock.back.member.domain.service.MemberAuthenticator;
 import com.thock.back.member.domain.service.RefreshTokenValidator;
 import com.thock.back.member.domain.vo.TokenPair;
@@ -10,7 +12,8 @@ import com.thock.back.member.domain.command.LoginCommand;
 import com.thock.back.member.domain.entity.Member;
 import com.thock.back.member.in.dto.AuthenticationResult;
 import com.thock.back.member.out.MemberRepository;
-import com.thock.back.member.out.RefreshTokenRepository;
+import com.thock.back.member.out.RefreshSessionStore;
+import com.thock.back.member.security.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -42,8 +45,9 @@ public class AuthApplicationService {
 
     // Repositories
     private final MemberRepository memberRepository;
-    private final RefreshTokenRepository refreshTokenRepository;
 
+    private final RefreshSessionStore refreshSessionStore;
+    private final JwtTokenProvider jwtTokenProvider;
     /**
      * 로그인 처리
      * 워크플로우:
@@ -91,15 +95,54 @@ public class AuthApplicationService {
         ValidatedRefreshToken validated = refreshTokenValidator.validate(refreshTokenValue);
 
         // 2. 기존 RefreshToken 폐기 (Refresh Token Rotation)
-        validated.token().revoke();
-        refreshTokenRepository.save(validated.token());
+        refreshSessionStore.revoke(validated.jti());
+        refreshSessionStore.markRotated(
+                validated.member().getId(),
+                validated.jti(),
+                java.time.Duration.ofSeconds(jwtTokenProvider.getRefreshTokenExpSeconds())
+        );
 
         // 3. 새 토큰 쌍 발급
         TokenPair tokens = tokenIssuer.issueTokens(validated.member());
 
-        log.info("[AUTH] AccessToken refreshed. memberId={}",
-                validated.member().getId());
+        log.info("[AUTH] AccessToken refreshed. memberId={}, jti={}", validated.member().getId(), validated.jti());
 
         return AuthenticationResult.of(tokens.accessToken(), tokens.refreshToken());
+    }
+
+    @Transactional
+    public void logout(String refreshTokenValue) {
+        validateRefreshTokenPayload(refreshTokenValue);
+
+        String jti = jwtTokenProvider.extractJti(refreshTokenValue);
+        refreshSessionStore.revoke(jti);
+
+        log.info("[AUTH] Logout completed. jti={}", jti);
+    }
+
+    @Transactional
+    public void logoutAll(String refreshTokenValue) {
+        validateRefreshTokenPayload(refreshTokenValue);
+
+        Long memberId = jwtTokenProvider.extractMemberId(refreshTokenValue);
+        refreshSessionStore.revokeAll(memberId);
+
+        log.info("[AUTH] Logout-all completed. memberId={}", memberId);
+    }
+
+    private void validateRefreshTokenPayload(String refreshTokenValue) {
+        if (!jwtTokenProvider.validate(refreshTokenValue)) {
+            throw new CustomException(ErrorCode.REFRESH_TOKEN_INVALID);
+        }
+
+        String tokenType = jwtTokenProvider.extractTokenType(refreshTokenValue);
+        if (!"refresh".equals(tokenType)) {
+            throw new CustomException(ErrorCode.REFRESH_TOKEN_INVALID);
+        }
+
+        String jti = jwtTokenProvider.extractJti(refreshTokenValue);
+        if (jti == null || jti.isBlank()) {
+            throw new CustomException(ErrorCode.REFRESH_TOKEN_INVALID);
+        }
     }
 }

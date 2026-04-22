@@ -3,11 +3,13 @@ package com.thock.back.market.in;
 
 import com.thock.back.global.security.AuthUser;
 import com.thock.back.global.security.AuthenticatedUser;
+import com.thock.back.global.exception.CustomException;
 import com.thock.back.market.app.MarketFacade;
 import com.thock.back.market.in.dto.req.OrderCancelRequest;
 import com.thock.back.market.in.dto.req.OrderCreateRequest;
 import com.thock.back.market.in.dto.req.OrderItemsCancelRequest;
 import com.thock.back.market.in.dto.req.OrderItemsConfirmRequest;
+import com.thock.back.market.in.dto.res.InternalOrderSummaryResponse;
 import com.thock.back.market.in.dto.res.OrderCreateResponse;
 import com.thock.back.market.in.dto.res.OrderDetailResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -52,6 +54,23 @@ public class ApiV1OrderController {
     }
 
     @Operation(
+            summary = "회원 최근 주문 요약 조회 (내부 API)",
+            description = "관리자 통합 조회용으로 회원의 최근 주문 요약 목록을 반환합니다."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "조회 성공"),
+            @ApiResponse(responseCode = "401", description = "내부 인증 헤더 누락 또는 불일치")
+    })
+    @GetMapping("/internal/members/{memberId}/summaries")
+    public ResponseEntity<List<InternalOrderSummaryResponse>> getInternalRecentOrderSummaries(
+            @PathVariable Long memberId,
+            @RequestParam(defaultValue = "5") int limit
+    ) {
+        log.info("Market Order API : getInternalRecentOrderSummaries / memberId = {}, limit = {}", memberId, limit);
+        return ResponseEntity.ok(marketFacade.getRecentOrderSummaries(memberId, limit));
+    }
+
+    @Operation(
             summary = "주문 상세 조회",
             description = "특정 주문의 상세 정보를 조회합니다."
     )
@@ -88,8 +107,18 @@ public class ApiV1OrderController {
             @Valid @RequestBody OrderCreateRequest request) {
         Long memberId = user.memberId();
         log.info("Market Order API : createOrder / memberId = {}", memberId);
-        OrderCreateResponse response = marketFacade.createOrder(memberId, request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        try {
+            OrderCreateResponse response = marketFacade.createOrder(memberId, request);
+            return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        } catch (CustomException e) {
+            log.warn("주문 생성 실패 - memberId={}, cartItemCount={}, reason={}",
+                    memberId, request.cartItemIds() == null ? 0 : request.cartItemIds().size(), e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            log.error("주문 생성 실패 - memberId={}, cartItemCount={}",
+                    memberId, request.cartItemIds() == null ? 0 : request.cartItemIds().size(), e);
+            throw e;
+        }
     }
 
     @Operation(

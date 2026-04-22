@@ -1,14 +1,12 @@
 package com.thock.back.market.app;
 
+import com.thock.back.market.in.dto.res.*;
 import com.thock.back.shared.market.dto.MarketMemberDto;
 import com.thock.back.shared.member.dto.MemberDto;
 import com.thock.back.market.in.dto.req.CartItemAddRequest;
 import com.thock.back.market.in.dto.req.OrderCreateRequest;
-import com.thock.back.market.in.dto.res.CartItemListResponse;
-import com.thock.back.market.in.dto.res.CartItemResponse;
-import com.thock.back.market.in.dto.res.OrderCreateResponse;
-import com.thock.back.market.in.dto.res.OrderDetailResponse;
 import com.thock.back.shared.market.domain.CancelReasonType;
+import com.thock.back.shared.product.event.ProductEvent;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,6 +25,8 @@ public class MarketFacade {
     private final MarketCancelOrderPaymentUseCase marketCancelOrderPaymentUseCase; // 주문 취소
     private final MarketCompleteRefundUseCase marketCompleteRefundUseCase; // 환불
     private final MarketConfirmOrderUseCase marketConfirmOrderUseCase; // 구매 확정
+    private final MarketSyncCartProductViewUseCase marketSyncCartProductViewUseCase;
+
     // 조회 전용
     private final CartService cartService;
     private final OrderService orderService;
@@ -105,5 +105,15 @@ public class MarketFacade {
     @Transactional
     public void confirmOrderItems(Long memberId, Long orderId, List<Long> orderItemIds) {
         marketConfirmOrderUseCase.confirmOrderItems(memberId, orderId, orderItemIds);
+    }
+
+    @Transactional
+    public void syncCartProductView(ProductEvent event) {
+        marketSyncCartProductViewUseCase.sync(event);
+    }
+
+    @Transactional(readOnly = true)
+    public List<InternalOrderSummaryResponse> getRecentOrderSummaries(Long memberId, int limit) {
+        return orderService.getRecentOrderSummaries(memberId, limit);
     }
 }

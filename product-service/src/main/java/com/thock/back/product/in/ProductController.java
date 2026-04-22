@@ -6,13 +6,9 @@ import com.thock.back.product.app.ProductCreateService;
 import com.thock.back.product.app.ProductManageService;
 import com.thock.back.product.app.ProductQueryService;
 import com.thock.back.product.domain.Category;
-import com.thock.back.product.in.dto.ProductCreateRequest;
-import com.thock.back.product.in.dto.ProductDetailResponse;
-import com.thock.back.product.in.dto.ProductListResponse;
-import com.thock.back.product.in.dto.ProductUpdateRequest;
+import com.thock.back.product.in.dto.*;
 import com.thock.back.product.in.dto.internal.ProductInternalResponse;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -63,7 +59,7 @@ public class ProductController {
             @ApiResponse(responseCode = "200", description = "조회 성공")
     })
     @GetMapping
-    public ResponseEntity<Page<ProductListResponse>> getProductList(
+    public ResponseEntity<Page<ProductSearchResponse>> getProductList(
             @RequestParam Category category,
             @ParameterObject @PageableDefault(size = 10, sort = "id", direction = Sort.Direction.DESC) Pageable pageable
     ) {
@@ -116,15 +112,16 @@ public class ProductController {
         return ResponseEntity.noContent().build();
     }
 
-    @Operation(summary = "상품 검색", description = "키워드로 상품을 검색합니다.")
+    @Operation(summary = "상품 검색", description = "조건에 따라 상품을 검색합니다.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "검색 성공")
     })
     @GetMapping("/search")
-    public ResponseEntity<List<ProductListResponse>> searchProducts(
-            @Parameter(description = "검색어") @RequestParam String keyword
+    public ResponseEntity<Page<ProductSearchResponse>> searchProducts(
+            @ParameterObject ProductSearchRequest condition,
+            @ParameterObject @PageableDefault(size = 10) Pageable pageable
     ) {
-        return ResponseEntity.ok(productQueryService.searchProductsByKeyword(keyword));
+        return ResponseEntity.ok(productQueryService.searchProducts(condition, pageable));
     }
 
     @Operation(
@@ -152,7 +149,7 @@ public class ProductController {
             @ApiResponse(responseCode = "403", description = "권한 없음")
     })
     @GetMapping("/me")
-    public ResponseEntity<Page<ProductListResponse>> getMyProducts(
+    public ResponseEntity<Page<ProductSearchResponse>> getMyProducts(
             @AuthUser AuthenticatedUser user,
             @ParameterObject @PageableDefault(size = 10, sort = "id", direction = Sort.Direction.DESC) Pageable pageable
     ) {
