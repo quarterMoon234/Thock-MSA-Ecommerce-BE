@@ -59,6 +59,9 @@ logs/
 loadtest/results/*
 !loadtest/results/.gitkeep
 
+### Documentation Assets ###
+docs/
+
 ### AWS EC2 Environment/Sensitive Files ###
 AWS EC2/deploy-kubernetes/base/secrets.yaml
 AWS EC2/deploy-kubernetes/ingress/ip-whitelist-middleware.yaml
