@@ -8,28 +8,8 @@ jobs:
   build-test:
     runs-on: ubuntu-latest
 
-    services:
-      mysql:
-        image: mysql:8.0
-        ports:
-          - 3306:3306
-        env:
-          MYSQL_ROOT_PASSWORD: root
-          MYSQL_DATABASE: test_db
-          MYSQL_USER: test
-          MYSQL_PASSWORD: test
-          TZ: Asia/Seoul
-        options: >-
-          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=10
-
     env:
       JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
-      TEST_DB_URL: jdbc:mysql://127.0.0.1:3306/test_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul&characterEncoding=UTF-8
-      TEST_DB_USERNAME: test
-      TEST_DB_PASSWORD: test
 
     steps:
       - name: Checkout code
