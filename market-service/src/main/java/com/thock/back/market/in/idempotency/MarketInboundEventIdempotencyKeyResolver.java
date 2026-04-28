@@ -5,6 +5,7 @@ import com.thock.back.shared.member.event.MemberModifiedEvent;
 import com.thock.back.shared.payment.event.PaymentCompletedEvent;
 import com.thock.back.shared.payment.event.PaymentRefundCompletedEvent;
 import com.thock.back.shared.product.event.ProductEvent;
+import com.thock.back.shared.product.event.ProductStockReservationFailedEvent;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -38,6 +39,13 @@ public class MarketInboundEventIdempotencyKeyResolver {
                 "payment-refund-completed",
                 event.dto().orderId(),
                 String.valueOf(event.dto().amount())
+        );
+    }
+
+    public String productStockReservationFailed(ProductStockReservationFailedEvent event) {
+        return String.join(":",
+                "product-stock-reservation-failed",
+                event.orderNumber()
         );
     }
 
