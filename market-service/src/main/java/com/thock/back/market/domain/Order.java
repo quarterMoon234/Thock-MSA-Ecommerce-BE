@@ -51,6 +51,10 @@ public class Order extends BaseIdAndTime {
     @Column(nullable = false)
     private OrderState state;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 50)
+    private OrderStockReservationState stockReservationState = OrderStockReservationState.NOT_REQUESTED;
+
     @Version
     private Long version;
 
@@ -78,6 +82,7 @@ public class Order extends BaseIdAndTime {
         this.buyer = buyer;
         this.orderNumber = generateOrderNumber();
         this.state = OrderState.PENDING_PAYMENT;
+        this.stockReservationState = OrderStockReservationState.NOT_REQUESTED;
         this.zipCode = zipCode;
         this.baseAddress = baseAddress;
         this.detailAddress = detailAddress;
@@ -173,6 +178,8 @@ public class Order extends BaseIdAndTime {
 
         // Settlement 이벤트 발행 (결제 완료)
         publishSettlementEvent(SettlementEventType.PAYMENT_COMPLETED);
+
+        this.stockReservationState = OrderStockReservationState.RESERVE_REQUESTED;
         // Product 재고 예약 이벤트 발행
         publishStockEvent(StockEventType.RESERVE, this.items);
     }
@@ -334,7 +341,12 @@ public class Order extends BaseIdAndTime {
         if (!refundedItems.isEmpty()) {
             publishEvent(new MarketOrderSettlementEvent(refundedItems));
             log.info("📊 환불 Settlement 이벤트 발행: orderNumber={}, count={}", orderNumber, refundedItems.size());
-            publishStockEvent(StockEventType.RELEASE, refundedOrderItems);
+
+            if (!isStockReservationFailed()) {
+                publishStockEvent(StockEventType.RELEASE, refundedOrderItems);
+            } else {
+                log.info("재고 예약 실패 주문이므로 재고 해제 이벤트 생략: orderNumber={}", orderNumber);
+            }
         }
 
         if (!confirmedItems.isEmpty()) {
@@ -527,5 +539,29 @@ public class Order extends BaseIdAndTime {
                 getOrderNumber(),
                 getTotalSalePrice()
         );
+    }
+
+    public boolean cancelBecauseStockReservationFailed(String reasonDetail) {
+        if (this.stockReservationState == OrderStockReservationState.RESERVE_FAILED) {
+            log.info("이미 재고 예약 실패로 보상 처리된 주문: orderNumber={}", orderNumber);
+            return false;
+        }
+
+        if (this.state == OrderState.CANCELLED || this.state == OrderState.REFUNDED) {
+            this.stockReservationState = OrderStockReservationState.RESERVE_FAILED;
+            return false;
+        }
+
+        if (!this.state.isCancellable()) {
+            throw new CustomException(ErrorCode.ORDER_CANNOT_CANCEL);
+        }
+
+        this.stockReservationState = OrderStockReservationState.RESERVE_FAILED;
+        this.cancel(CancelReasonType.STOCK_RESERVATION_FAILED, reasonDetail);
+        return true;
+    }
+
+    public boolean isStockReservationFailed() {
+        return this.stockReservationState == OrderStockReservationState.RESERVE_FAILED;
     }
 }
