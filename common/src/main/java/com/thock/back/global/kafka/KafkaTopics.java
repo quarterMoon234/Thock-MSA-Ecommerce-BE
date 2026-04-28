@@ -19,6 +19,7 @@ public class KafkaTopics {
 
     // Product events
     public static final String PRODUCT_CHANGED = "product.changed";
+    public static final String PRODUCT_STOCK_RESERVATION_FAILED = "product.stock.reservation.failed";
 
     // Payment events
     public static final String PAYMENT_REFUND_COMPLETED = "payment.refund.completed";
