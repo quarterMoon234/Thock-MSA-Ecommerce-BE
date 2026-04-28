@@ -9,13 +9,17 @@ spring:
       auto-startup: false
 
   datasource:
-    url: ${TEST_DB_URL:jdbc:mysql://localhost:3307/test_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul&characterEncoding=UTF-8}
-    username: ${TEST_DB_USERNAME:test}
-    password: ${TEST_DB_PASSWORD:test}
+    driver-class-name: ${TEST_DB_DRIVER:org.h2.Driver}
+    url: ${TEST_DB_URL:jdbc:h2:mem:settlement_test;MODE=MySQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE}
+    username: ${TEST_DB_USERNAME:sa}
+    password: ${TEST_DB_PASSWORD:}
 
   jpa:
     hibernate:
       ddl-auto: create-drop
+    properties:
+      hibernate:
+        dialect: ${TEST_DB_DIALECT:org.hibernate.dialect.H2Dialect}
 
 jwt:
   secret: thock-test-jwt-secret-key-which-is-long-enough-32chars
