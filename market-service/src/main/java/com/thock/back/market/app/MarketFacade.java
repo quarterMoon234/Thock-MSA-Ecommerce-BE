@@ -7,6 +7,7 @@ import com.thock.back.market.in.dto.req.CartItemAddRequest;
 import com.thock.back.market.in.dto.req.OrderCreateRequest;
 import com.thock.back.shared.market.domain.CancelReasonType;
 import com.thock.back.shared.product.event.ProductEvent;
+import com.thock.back.shared.product.event.ProductStockReservationFailedEvent;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,6 +27,7 @@ public class MarketFacade {
     private final MarketCompleteRefundUseCase marketCompleteRefundUseCase; // 환불
     private final MarketConfirmOrderUseCase marketConfirmOrderUseCase; // 구매 확정
     private final MarketSyncCartProductViewUseCase marketSyncCartProductViewUseCase;
+    private final MarketCompensateStockReservationFailureUseCase marketCompensateStockReservationFailureUseCase;
 
     // 조회 전용
     private final CartService cartService;
@@ -115,5 +117,10 @@ public class MarketFacade {
     @Transactional(readOnly = true)
     public List<InternalOrderSummaryResponse> getRecentOrderSummaries(Long memberId, int limit) {
         return orderService.getRecentOrderSummaries(memberId, limit);
+    }
+
+    @Transactional
+    public void compensateStockReservationFailure(ProductStockReservationFailedEvent event) {
+        marketCompensateStockReservationFailureUseCase.compensate(event);
     }
 }

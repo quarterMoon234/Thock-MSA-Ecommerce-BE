@@ -11,6 +11,7 @@ import com.thock.back.shared.member.event.MemberModifiedEvent;
 import com.thock.back.shared.payment.event.PaymentCompletedEvent;
 import com.thock.back.shared.payment.event.PaymentRefundCompletedEvent;
 import com.thock.back.shared.product.event.ProductEvent;
+import com.thock.back.shared.product.event.ProductStockReservationFailedEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
@@ -139,6 +140,29 @@ public class MarketKafkaListener {
             inboundMetrics.recordProcessed(KafkaTopics.PRODUCT_CHANGED);
         } catch (Exception e) {
             inboundMetrics.recordFailed(KafkaTopics.PRODUCT_CHANGED);
+            throw e;
+        }
+    }
+
+    @KafkaListener(topics = KafkaTopics.PRODUCT_STOCK_RESERVATION_FAILED, groupId = "market-service")
+    @Transactional
+    public void handle(ProductStockReservationFailedEvent event) {
+        inboundMetrics.recordReceived(KafkaTopics.PRODUCT_STOCK_RESERVATION_FAILED);
+        if (!shouldProcess(
+                KafkaTopics.PRODUCT_STOCK_RESERVATION_FAILED,
+                keyResolver.productStockReservationFailed(event)
+        )) {
+            inboundMetrics.recordDuplicate(KafkaTopics.PRODUCT_STOCK_RESERVATION_FAILED);
+            return;
+        }
+
+        try {
+            log.warn("Received ProductStockReservationFailedEvent via Kafka: orderNumber={}, reasonCode={}",
+                    event.orderNumber(), event.reasonCode());
+            marketFacade.compensateStockReservationFailure(event);
+            inboundMetrics.recordProcessed(KafkaTopics.PRODUCT_STOCK_RESERVATION_FAILED);
+        } catch (Exception e) {
+            inboundMetrics.recordFailed(KafkaTopics.PRODUCT_STOCK_RESERVATION_FAILED);
             throw e;
         }
     }

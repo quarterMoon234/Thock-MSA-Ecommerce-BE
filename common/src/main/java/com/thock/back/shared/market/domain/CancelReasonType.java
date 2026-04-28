@@ -11,6 +11,7 @@ public enum CancelReasonType {
     // 시스템에서 취소하는 경우
     PAYMENT_TIMEOUT("결제 시간 초과"),
     PAYMENT_CANCELLED_BY_USER("사용자 결제 취소"),
+    STOCK_RESERVATION_FAILED("재고 예약 실패"),
 
     // 사용자가 취소하는 경우
     CHANGE_OF_MIND("단순 변심"),
@@ -32,7 +33,8 @@ public enum CancelReasonType {
      * 시스템에 의한 취소인지 확인
      */
     public boolean isSystemCancellation() {
-        return this == PAYMENT_TIMEOUT || this == PAYMENT_CANCELLED_BY_USER;
+        return this == PAYMENT_TIMEOUT ||
+                this == PAYMENT_CANCELLED_BY_USER ||
+                this == STOCK_RESERVATION_FAILED;
     }
-
 }
