@@ -61,9 +61,15 @@ public class OrderCancelHistory extends BaseIdAndTime {
         return new OrderCancelHistory(order, orderItem, cancelReasonType, cancelReasonDetail, CancelledBy.USER);
     }
 
+    public static OrderCancelHistory ofSystemCancel(Order order, OrderItem orderItem,
+                                                    CancelReasonType cancelReasonType,
+                                                    String cancelReasonDetail) {
+        return new OrderCancelHistory(order, orderItem, cancelReasonType, cancelReasonDetail, CancelledBy.SYSTEM);
+    }
+
     // 팩토리 메서드: 시스템 취소
     public static OrderCancelHistory ofSystemCancel(Order order, OrderItem orderItem,
                                                     CancelReasonType cancelReasonType) {
-        return new OrderCancelHistory(order, orderItem, cancelReasonType, "시스템에서 취소(타임 아웃 등)", CancelledBy.SYSTEM);
+        return ofSystemCancel(order, orderItem, cancelReasonType, "시스템에서 취소(타임 아웃 등)");
     }
 }
